@@ -1,0 +1,10 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: dagger
+  namespace: dagger
+spec:
+  interval: 24h
+  type: oci
+  url: oci://registry.dagger.io
