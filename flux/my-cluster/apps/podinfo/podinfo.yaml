@@ -27,7 +27,7 @@ spec:
   values:
     ingress:
       enabled: true
-      className: nginx
+      className: traefik
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-production
         external-dns.alpha.kubernetes.io/hostname: podinfo.bupd.xyz
