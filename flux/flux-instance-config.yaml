@@ -15,8 +15,14 @@ spec:
     path: "flux/my-cluster"
     # omitted since the repo is public
     pullSecret: "flux-git-auth"
-    decryption:
-      provider: sops
-      secretRef:
-        name: sops-age
-
+  kustomize:
+    patches:
+      - patch: |
+          - op: add
+            path: /spec/decryption
+            value:
+              provider: sops
+              secretRef:
+                name: sops-age
+        target:
+          kind: Kustomization
