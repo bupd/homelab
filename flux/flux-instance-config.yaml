@@ -9,6 +9,7 @@ spec:
     version: "2.x"
     registry: "ghcr.io/fluxcd"
   sync:
+    interval: 1m0s
     kind: GitRepository
     url: "https://github.com/bupd/homelab.git"
     ref: "refs/heads/main"
