@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: flux-git-auth
+    namespace: flux-system
+stringData:
+    .dockerconfigjson: ENC[AES256_GCM,data:eWrdpo5KV2IhoXZ5xmt/vYU0dXrhXOChDM6TLM66futvVFL8cO0YYDrarRAN14TByquTZyK0xRWftKTFdiwKnwuO3w8mBORGAk9FKZoFVnX9uWsbBCJOp8E6WAtV7gwy71vbdgw=,iv:9lDh0Yqwp3HCqAE4qHuXv3DP4IQ/oSFNM4afTvRXLIE=,tag:fi4NsBGQOGibhflufIXB+Q==,type:str]
+type: kubernetes.io/dockerconfigjson
+sops:
+    age:
+        - recipient: age1vgjxqxjsgk0p46f0fyvnvxrd6sceuhqymyt4h5fsgaanrd2vt3yqpa0054
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBZdVdWam5nL0dYR0hGWTZU
+            eUdEd1h1YnFhM0dwbnI5ZUZvUTcxN0tLcWlrCjdsd1hraTBROXpxTTF6b2VrY0tC
+            NWNKK25TTXZoOFJrb25RZFcrbEI3YzgKLS0tIHRVVkVVUFBQazE4MGlpblNJZWlh
+            TTVLNzduckxUSS9WbG91b0pvM05HR3MKV8SqZWid+DGZ0A24FEPCpHIKVb3ntiYn
+            wwM3xB2xJRS/wF5Tth+i6Y6neGvk4njmej43Q5QsUfyTDzuXpPam2Q==
+            -----END AGE ENCRYPTED FILE-----
+        - recipient: age1l94nxjefdnlew2lzdpr2dc52vm8qt024ql5nuyefar9g32ph7cxq8u6r7s
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBrcHRuVjZtQWNqbVMwOG1Z
+            bXZUMmxEMGxYNkNOSDBFNlFxanIvazNQYTJvCjcxL3VOb05RSWEyZ3pIM1B4em1Y
+            RzhUSmF4dUcxQXVmY0laODJUUFpCa0UKLS0tIGx3UVlzanJrUDIyUmZidWRFS0dO
+            WEUzYkV4RFZUdVNaRU0yR3RSTGRnVzgKiVyygp+6VhChm9rq5obKFt8m6LD0ryI4
+            QQJe2Vkt3O4cYBJqkHK4Lj1uY03ZLH66CD10NiyEoe1Hk+SWhV4vWw==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2025-09-08T23:45:52Z"
+    mac: ENC[AES256_GCM,data:KB6hQ/RlB2Cb2OZ+NeDTX9T/RHEk3lHtWBgAP43+pj3Ey/LxESS7qYzn7nmJQlG/5rqvOn5ec1eDiZBHe/KAiXrIgpGTQZXpUbyvO7cVNRGvL9sbzxNiXPH5A0ScpnWIXVI8meH8Fl/DTF2OB8hrpm8TNT40CYGKD7/FK3g9sZ0=,iv:fzfyJNYpd63rpK2E5m/77kfTPXPEIVJ4352OnvWoK0s=,tag:Kf/Jv4PLgxAFv/Aj5opUdg==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.10.2
