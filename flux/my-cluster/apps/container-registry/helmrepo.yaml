@@ -1,0 +1,11 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: container-registry
+  namespace: container-registry
+spec:
+  type: "oci"
+  interval: 5m0s
+  url: oci://8gears.container-registry.com/8gcr/charts/harbor
+  secretRef:
+    name: oci-creds
