@@ -15,7 +15,7 @@ creation_rules:
       age1vgjxqxjsgk0p46f0fyvnvxrd6sceuhqymyt4h5fsgaanrd2vt3yqpa0054,
       age1l94nxjefdnlew2lzdpr2dc52vm8qt024ql5nuyefar9g32ph7cxq8u6r7s
   - path_regex: '.*\.?secrets\.yaml$'
-    encrypted_regex: '(password|secret|key|token|user)'
+    encrypted_regex: '(password|secret|key|token|user|data)'
     age: >-
       age1vgjxqxjsgk0p46f0fyvnvxrd6sceuhqymyt4h5fsgaanrd2vt3yqpa0054,
       age1l94nxjefdnlew2lzdpr2dc52vm8qt024ql5nuyefar9g32ph7cxq8u6r7s
