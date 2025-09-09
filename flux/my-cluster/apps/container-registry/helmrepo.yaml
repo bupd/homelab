@@ -1,7 +1,7 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: container-registry
+  name: harbor
   namespace: container-registry
 spec:
   type: "oci"
