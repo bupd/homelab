@@ -6,6 +6,6 @@ metadata:
 spec:
   type: "oci"
   interval: 5m0s
-  url: oci://8gears.container-registry.com/8gcr/charts/harbor
+  url: oci://8gears.container-registry.com/8gcr/charts
   secretRef:
     name: oci-creds
