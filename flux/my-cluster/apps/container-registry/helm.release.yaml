@@ -1,0 +1,20 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: container-registry
+  namespace: container-registry
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: container-registry
+      version: ">=v1.17.0"
+      sourceRef:
+        kind: HelmRepository
+        name: container-registry
+        namespace: container-registry
+      interval: 1m
+      valuesFiles:
+        - helm.values.yaml
+  values:
+    installCRDs: true
