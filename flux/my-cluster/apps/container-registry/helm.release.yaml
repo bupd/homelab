@@ -14,8 +14,9 @@ spec:
         name: charts
         namespace: container-registry
       interval: 1m
-      valuesFiles:
-        - helm.values.yaml
+      # not working as expected
+      # valuesFiles:
+      #   - helm.values.yaml
   values:
     expose:
       # Set how to expose the service. Set the type as "ingress", "clusterIP", "nodePort" or "loadBalancer"
