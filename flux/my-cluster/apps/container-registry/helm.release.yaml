@@ -1086,5 +1086,9 @@ spec:
       #   whenUnsatisfiable: DoNotSchedule
       cacheDuration: 23
       cacheCleanInterval: 14400
+      override:
+        # Option to override the .database connection settings for the exporter.
+        database:
+           maxIdleConns: 50
 
     installCRDs: true
