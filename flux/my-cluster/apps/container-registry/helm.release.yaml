@@ -574,7 +574,7 @@ spec:
     core:
       image:
         repository: 8gears.container-registry.com/8gcr/harbor-core
-        tag: test-jwt
+        tag: jwt-auth-debug
       # set the service account to be used, default if left empty
       serviceAccountName: ""
       # mount the service account token
