@@ -574,6 +574,7 @@ spec:
     core:
       image:
         # repository: 8gears.container-registry.com/8gcr/harbor-core
+        # only for testing
         repository: ttl.sh/8gcr/harbor-core
         tag: test-jwt-debug
       # set the service account to be used, default if left empty
