@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: distilbert-sentiment-classifier
+  namespace: default
+  labels:
+    app: distilbert-sentiment-classifier
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: distilbert-sentiment-classifier
+  template:
+    metadata:
+      labels:
+        app: distilbert-sentiment-classifier
+    spec:
+      containers:
+        - name: model-runtime
+          image: koded001/distilbert-runtime:1.0.0
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MODEL_VERSION
+              value: "1.0.2"
+            - name: JOZU_REGISTRY
+              value: "jozu.ml/oyedeletemitope76"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
