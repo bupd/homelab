@@ -40,35 +40,35 @@ spec:
         pathType: Prefix # Or Exact, if you only want /kumar and nothing else
         backend:
           service:
-            name: harbor-test-harbor-core # Name of your Kubernetes Service
+            name: harbor-test-core # Name of your Kubernetes Service
             port:
               number: 80 # Port your service is exposed on (from the Service definition)
       - path: /api/ # The path you want to expose
         pathType: Prefix # Or Exact, if you only want /kumar and nothing else
         backend:
           service:
-            name: harbor-test-harbor-core # Name of your Kubernetes Service
+            name: harbor-test-core # Name of your Kubernetes Service
             port:
               number: 80 # Port your service is exposed on (from the Service definition)
       - path: /c/ # The path you want to expose
         pathType: Prefix # Or Exact, if you only want /kumar and nothing else
         backend:
           service:
-            name: harbor-test-harbor-core # Name of your Kubernetes Service
+            name: harbor-test-core # Name of your Kubernetes Service
             port:
               number: 80 # Port your service is exposed on (from the Service definition)
       - path: / # The path you want to expose
         pathType: Prefix # Or Exact, if you only want /kumar and nothing else
         backend:
           service:
-            name: harbor-test-harbor-portal # Name of your Kubernetes Service
+            name: harbor-test-portal # Name of your Kubernetes Service
             port:
               number: 80 # Port your service is exposed on (from the Service definition)
       - path: /v2/ # The path you want to expose
         pathType: Prefix # Or Exact, if you only want /kumar and nothing else
         backend:
           service:
-            name: harbor-test-harbor-core # Name of your Kubernetes Service
+            name: harbor-test-core # Name of your Kubernetes Service
             port:
               number: 80 # Port your service is exposed on (from the Service definition)
   tls:
