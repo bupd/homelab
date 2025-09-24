@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: model-runtime
-          image: koded001/distilbert-runtime:1.0.0
+          image: ttl.sh/bupd/model:1.0.0
           ports:
             - containerPort: 8000
           env:
