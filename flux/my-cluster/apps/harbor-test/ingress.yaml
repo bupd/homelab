@@ -1,0 +1,77 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-test-tls
+  namespace: harbor-test
+spec:
+  secretName: harbor-test-tls
+  issuerRef:
+    name: letsencrypt-dns
+    kind: ClusterIssuer
+  commonName: harbor-test.bupd.xyz
+  dnsNames:
+  - harbor-test.bupd.xyz
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: harbor-test-ingress
+  namespace: harbor-test
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-dns
+    kubernetes.io/ingress.class: traefik
+    # ingress.kubernetes.io/ssl-redirect: "true"
+    ingress.kubernetes.io/proxy-body-size: "0"
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    # Optional: If you have multiple Ingress controllers, ensure Traefik is used
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure # For older Traefik versions or specific configs
+    # ingress.kubernetes.io/router.entrypoints: web,websecure # If you use custom entrypoints
+  labels:
+    app: harbor-test
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: harbor-test.bupd.xyz
+    http:
+      paths:
+      - path: /service/ # The path you want to expose
+        pathType: Prefix # Or Exact, if you only want /kumar and nothing else
+        backend:
+          service:
+            name: harbor-test-harbor-core # Name of your Kubernetes Service
+            port:
+              number: 80 # Port your service is exposed on (from the Service definition)
+      - path: /api/ # The path you want to expose
+        pathType: Prefix # Or Exact, if you only want /kumar and nothing else
+        backend:
+          service:
+            name: harbor-test-harbor-core # Name of your Kubernetes Service
+            port:
+              number: 80 # Port your service is exposed on (from the Service definition)
+      - path: /c/ # The path you want to expose
+        pathType: Prefix # Or Exact, if you only want /kumar and nothing else
+        backend:
+          service:
+            name: harbor-test-harbor-core # Name of your Kubernetes Service
+            port:
+              number: 80 # Port your service is exposed on (from the Service definition)
+      - path: / # The path you want to expose
+        pathType: Prefix # Or Exact, if you only want /kumar and nothing else
+        backend:
+          service:
+            name: harbor-test-harbor-portal # Name of your Kubernetes Service
+            port:
+              number: 80 # Port your service is exposed on (from the Service definition)
+      - path: /v2/ # The path you want to expose
+        pathType: Prefix # Or Exact, if you only want /kumar and nothing else
+        backend:
+          service:
+            name: harbor-test-harbor-core # Name of your Kubernetes Service
+            port:
+              number: 80 # Port your service is exposed on (from the Service definition)
+  tls:
+  - hosts:
+    - harbor-test.bupd.xyz
+    secretName: harbor-test-tls
