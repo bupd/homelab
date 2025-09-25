@@ -666,7 +666,7 @@ spec:
     jobservice:
       image:
         # repository: goharbor/harbor-jobservice
-        repository: 8gears.container-registry.com/8gcr/jobservice
+        repository: 8gears.container-registry.com/8gcr/harbor-jobservice
         tag: test-gc-tagdel
       # set the service account to be used, default if left empty
       serviceAccountName: ""
