@@ -573,10 +573,11 @@ spec:
 
     core:
       image:
-        repository: goharbor/harbor-core
+        # repository: goharbor/harbor-core
+        repository: 8gears.container-registry.com/8gcr/harbor-core
         # only for testing
         # repository: ttl.sh/8gcr/harbor-core
-        tag: v2.14.0
+        tag: test-gc-tagdel
       # set the service account to be used, default if left empty
       serviceAccountName: ""
       # mount the service account token
@@ -664,8 +665,9 @@ spec:
 
     jobservice:
       image:
-        repository: goharbor/harbor-jobservice
-        tag: v2.14.0
+        # repository: goharbor/harbor-jobservice
+        repository: 8gears.container-registry.com/8gcr/jobservice
+        tag: test-gc-tagdel
       # set the service account to be used, default if left empty
       serviceAccountName: ""
       # mount the service account token
