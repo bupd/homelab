@@ -48,7 +48,7 @@ spec:
           secretName: "harbor-test-tls"
       ingress:
         hosts:
-          core: core.harbor.domain
+          core: harbor-test.bupd.xyz
         # set to the type of ingress controller if it has specific requirements.
         # leave as `default` for most ingress controllers.
         # set to `gce` if using the GCE ingress controller
