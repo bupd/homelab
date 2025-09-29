@@ -533,8 +533,8 @@ spec:
 
     portal:
       image:
-        repository: goharbor/harbor-portal
-        tag: v2.14.0
+        repository: 8gears.container-registry.com/8gcr/harbor-portal
+        tag: test-jwt
       # set the service account to be used, default if left empty
       serviceAccountName: ""
       # mount the service account token
