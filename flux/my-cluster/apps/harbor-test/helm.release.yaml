@@ -816,6 +816,7 @@ spec:
 
     trivy:
       # enabled the flag to enable Trivy scanner
+      # next level
       enabled: true
       image:
         # repository the repository for Trivy adapter image
