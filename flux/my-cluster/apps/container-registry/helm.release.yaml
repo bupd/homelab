@@ -576,7 +576,7 @@ spec:
         repository: 8gears.container-registry.com/8gcr/harbor-core
         # only for testing
         # repository: ttl.sh/8gcr/harbor-core
-        tag: test-jwt
+        tag: v2.14.1
       # set the service account to be used, default if left empty
       serviceAccountName: ""
       # mount the service account token
@@ -665,7 +665,7 @@ spec:
     jobservice:
       image:
         repository: 8gears.container-registry.com/8gcr/harbor-jobservice
-        tag: test-jwt
+        tag: v2.14.1
       # set the service account to be used, default if left empty
       serviceAccountName: ""
       # mount the service account token
