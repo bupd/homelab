@@ -817,7 +817,7 @@ spec:
       image:
         # repository the repository for Trivy adapter image
         repository: 8gears.container-registry.com/8gcr/trivy-adapter
-        # tag the  tag for Trivy adapter image
+        # tag the tag for Trivy adapter image
         tag: v2.14.1
       # set the service account to be used, default if left empty
       serviceAccountName: ""
