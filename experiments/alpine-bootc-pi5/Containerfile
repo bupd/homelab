@@ -1,9 +1,10 @@
+ARG BOOTC_BIN_IMAGE=ghcr.io/bupd/homelab/bootc-bin-alpine-arm64:latest
+
 FROM scratch AS ctx
 
 COPY build_files /build_files
 COPY system_files /system_files
 
-ARG BOOTC_BIN_IMAGE=ghcr.io/bupd/homelab/bootc-bin-alpine-arm64:latest
 FROM --platform=$TARGETPLATFORM ${BOOTC_BIN_IMAGE} AS bootc-bin
 
 FROM --platform=$TARGETPLATFORM alpine:3.23
