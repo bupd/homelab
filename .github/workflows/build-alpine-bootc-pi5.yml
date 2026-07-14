@@ -37,6 +37,14 @@ jobs:
         run: |
           podman build --platform linux/arm64 -t "${IMAGE}:latest" -t "${IMAGE}:${GITHUB_SHA}" -f Containerfile .
 
+      - name: Verify Homebrew
+        run: |
+          podman run --rm --platform linux/arm64 "${IMAGE}:latest" sh -lc '
+            set -eux
+            command -v brew
+            su bupd -c "brew --version && brew config"
+          '
+
       - name: Push
         run: |
           podman push "${IMAGE}:latest"

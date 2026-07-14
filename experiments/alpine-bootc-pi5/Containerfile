@@ -35,6 +35,7 @@ COPY --from=bootc-builder /output /
 RUN chmod +x /build_files/*.sh /etc/init.d/k3s /etc/init.d/cloudflared && \
     /build_files/00-install.sh && \
     /build_files/10-bootc-rootfs.sh && \
+    /build_files/15-homebrew.sh && \
     /build_files/20-enable-services.sh && \
     /build_files/90-cleanup.sh
 

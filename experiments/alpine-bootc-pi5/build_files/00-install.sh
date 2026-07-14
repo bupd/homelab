@@ -13,8 +13,10 @@ apk add --no-cache \
     bash \
     bluez \
     bluez-openrc \
+    build-base \
     buildah \
     busybox-mdev-openrc \
+    ca-certificates \
     chrony \
     cloudflared@edge-testing \
     cni-plugins \
@@ -22,7 +24,9 @@ apk add --no-cache \
     dosfstools \
     dracut \
     e2fsprogs \
+    file \
     fuse-overlayfs \
+    gcompat \
     ip6tables \
     iptables \
     iwd \
@@ -39,6 +43,8 @@ apk add --no-cache \
     raspberrypi-bootloader \
     raspberrypi-utils \
     restic \
+    ruby \
+    ruby-dev \
     skopeo \
     slirp4netns \
     sudo \
