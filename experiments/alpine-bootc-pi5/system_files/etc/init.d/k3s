@@ -1,0 +1,16 @@
+#!/sbin/openrc-run
+
+depend() {
+    after network-online
+    want cgroups
+}
+
+supervisor=supervise-daemon
+name=k3s
+command="/usr/bin/k3s"
+command_args="server >>/var/log/k3s.log 2>&1"
+output_log=/var/log/k3s.log
+error_log=/var/log/k3s.log
+pidfile="/var/run/k3s.pid"
+respawn_delay=5
+respawn_max=0
