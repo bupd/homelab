@@ -9,7 +9,7 @@ on:
         required: true
       size:
         description: "Raw SD card image size"
-        default: 4G
+        default: 1900M
         required: true
   push:
     branches:
@@ -27,7 +27,7 @@ permissions:
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/bootc-alpine-arm64
   TAG: ${{ github.event.inputs.tag || 'latest' }}
-  SIZE: ${{ github.event.inputs.size || '4G' }}
+  SIZE: ${{ github.event.inputs.size || '1900M' }}
 
 jobs:
   build-image:
