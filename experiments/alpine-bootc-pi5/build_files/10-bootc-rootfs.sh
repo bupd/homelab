@@ -26,7 +26,7 @@ ln -sT var/mnt /mnt
 
 cat > /usr/lib/ostree/prepare-root.conf <<'EOF'
 [composefs]
-enabled = yes
+enabled = no
 
 [sysroot]
 readonly = true
