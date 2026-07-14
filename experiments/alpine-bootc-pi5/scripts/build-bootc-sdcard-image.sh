@@ -17,6 +17,7 @@ require_cmd() {
 require_cmd awk
 require_cmd find
 require_cmd losetup
+require_cmd lsblk
 require_cmd mkfs.ext4
 require_cmd mkfs.vfat
 require_cmd parted
@@ -73,22 +74,57 @@ echo "== target mounts =="
 findmnt -R "$root_mnt"
 ls -l "$loopdev" "$boot_part" "$root_part"
 
+majmin() {
+  lsblk -nro MAJ:MIN "$1" | head -n 1
+}
+
+loop_majmin="$(majmin "$loopdev")"
+boot_majmin="$(majmin "$boot_part")"
+root_majmin="$(majmin "$root_part")"
+
 podman run --rm --privileged --pid=host \
   --security-opt label=type:unconfined_t \
   --device "$loopdev" \
   --device "$boot_part" \
   --device "$root_part" \
+  -e LOOPDEV="$loopdev" \
+  -e BOOT_PART="$boot_part" \
+  -e ROOT_PART="$root_part" \
+  -e LOOP_MAJOR="${loop_majmin%:*}" \
+  -e LOOP_MINOR="${loop_majmin#*:}" \
+  -e BOOT_MAJOR="${boot_majmin%:*}" \
+  -e BOOT_MINOR="${boot_majmin#*:}" \
+  -e ROOT_MAJOR="${root_majmin%:*}" \
+  -e ROOT_MINOR="${root_majmin#*:}" \
+  -e TARGET_IMGREF="$target_imgref" \
   -v /dev:/dev \
   -v /var/lib/containers:/var/lib/containers \
   -v "$root_mnt:/target" \
   "${image}:${tag}" \
-  bootc install to-filesystem \
+  sh -euxc '
+    ensure_block_node() {
+      path="$1"
+      major="$2"
+      minor="$3"
+      if [ ! -b "$path" ]; then
+        rm -f "$path"
+        mknod "$path" b "$major" "$minor"
+      fi
+    }
+
+    ensure_block_node "$LOOPDEV" "$LOOP_MAJOR" "$LOOP_MINOR"
+    ensure_block_node "$BOOT_PART" "$BOOT_MAJOR" "$BOOT_MINOR"
+    ensure_block_node "$ROOT_PART" "$ROOT_MAJOR" "$ROOT_MINOR"
+    ls -l "$LOOPDEV" "$BOOT_PART" "$ROOT_PART"
+
+    bootc install to-filesystem \
     --bootloader none \
     --root-mount-spec LABEL=ALPINE_BOOTC \
     --boot-mount-spec LABEL=BOOT \
-    --target-imgref "$target_imgref" \
+    --target-imgref "$TARGET_IMGREF" \
     --skip-fetch-check \
     /target
+  '
 
 echo "== bootc-installed filesystem summary =="
 find "$root_mnt" -maxdepth 4 \( -type d -o -type l -o -type f \) | sort | sed -n '1,240p'
