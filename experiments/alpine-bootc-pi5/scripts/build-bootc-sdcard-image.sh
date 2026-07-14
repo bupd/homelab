@@ -66,12 +66,9 @@ fi
 udevadm settle || true
 mkfs.vfat -F 32 -n BOOT "$boot_part"
 mkfs.ext4 -F -L ALPINE_BOOTC "$root_part"
-boot_uuid="$(blkid -s UUID -o value "$boot_part")"
 root_uuid="$(blkid -s UUID -o value "$root_part")"
 
 mount "$root_part" "$root_mnt"
-mkdir -p "$root_mnt/boot"
-mount "$boot_part" "$root_mnt/boot"
 
 echo "== target mounts =="
 findmnt -R "$root_mnt"
@@ -103,7 +100,6 @@ podman run --rm --privileged --pid=host \
   -e BOOT_MINOR="${boot_majmin#*:}" \
   -e ROOT_MAJOR="${root_majmin%:*}" \
   -e ROOT_MINOR="${root_majmin#*:}" \
-  -e BOOT_UUID="$boot_uuid" \
   -e ROOT_UUID="$root_uuid" \
   -e TARGET_IMGREF="$target_imgref" \
   -v /dev:/dev \
@@ -131,7 +127,6 @@ podman run --rm --privileged --pid=host \
     bootc install to-filesystem \
     --bootloader none \
     --root-mount-spec "UUID=$ROOT_UUID" \
-    --boot-mount-spec "UUID=$BOOT_UUID" \
     --target-imgref "$TARGET_IMGREF" \
     --skip-fetch-check \
     /target
@@ -151,13 +146,15 @@ find "$root_mnt/boot" -maxdepth 4 -type f -print | sort | while read -r f; do
 done
 
 echo "== installing Raspberry Pi firmware boot files =="
+mount "$boot_part" "$boot_mnt"
+
 deployment="$(find "$root_mnt/ostree/deploy" -path '*/deploy/*.0' -type d | sort | tail -n 1)"
 if [[ -z "$deployment" ]]; then
   echo "could not find bootc deployment under ostree/deploy" >&2
   exit 1
 fi
 
-tar --exclude='./boot' -C "$deployment/usr/lib/rpi-boot" -cpf - . | tar -C "$root_mnt/boot" -xpf -
+tar --exclude='./boot' -C "$deployment/usr/lib/rpi-boot" -cpf - . | tar -C "$boot_mnt" -xpf -
 
 entry="$(find "$root_mnt/boot/loader/entries" -name '*.conf' -type f | sort | tail -n 1 || true)"
 if [[ -z "$entry" ]]; then
@@ -166,18 +163,18 @@ if [[ -z "$entry" ]]; then
 fi
 
 options="$(awk '/^options / { sub(/^options /, ""); print; exit }' "$entry")"
-cat > "$root_mnt/boot/config.txt" <<'EOF'
+cat > "$boot_mnt/config.txt" <<'EOF'
 kernel=vmlinuz-rpi
 initramfs initramfs-rpi
 arm_64bit=1
 enable_uart=1
 include usercfg.txt
 EOF
-touch "$root_mnt/boot/usercfg.txt"
-printf '%s cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1\n' "$options" > "$root_mnt/boot/cmdline.txt"
+touch "$boot_mnt/usercfg.txt"
+printf '%s cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1\n' "$options" > "$boot_mnt/cmdline.txt"
 
 sync
-umount "$root_mnt/boot"
+umount "$boot_mnt"
 umount "$root_mnt"
 losetup -d "$loopdev"
 loopdev=""
