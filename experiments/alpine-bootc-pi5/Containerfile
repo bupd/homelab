@@ -1,0 +1,48 @@
+FROM scratch AS ctx
+
+COPY build_files /build_files
+COPY system_files /system_files
+
+FROM --platform=$TARGETPLATFORM alpine:3.23 AS bootc-builder
+
+RUN apk add --no-cache \
+    bash \
+    build-base \
+    cargo \
+    git \
+    libarchive-dev \
+    openssl-dev \
+    ostree-dev \
+    pkgconf \
+    rust
+
+WORKDIR /src/bootc
+RUN git clone --depth 1 https://github.com/bootc-dev/bootc.git . && \
+    sed -i \
+      -e 's/libc::OVERLAYFS_SUPER_MAGIC/(libc::OVERLAYFS_SUPER_MAGIC as u64)/g' \
+      -e 's/libc::MSDOS_SUPER_MAGIC/(libc::MSDOS_SUPER_MAGIC as u64)/g' \
+      -e 's/libc::TMPFS_MAGIC/(libc::TMPFS_MAGIC as u64)/g' \
+      crates/lib/src/generator.rs crates/lib/src/install.rs && \
+    cargo build --locked --bin bootc && \
+    install -Dm0755 target/debug/bootc /output/usr/bin/bootc
+
+FROM --platform=$TARGETPLATFORM alpine:3.23
+
+COPY --from=ctx /build_files /build_files
+COPY --from=ctx /system_files /
+COPY --from=bootc-builder /output /
+
+RUN chmod +x /build_files/*.sh /etc/init.d/k3s /etc/init.d/cloudflared && \
+    /build_files/00-install.sh && \
+    /build_files/10-bootc-rootfs.sh && \
+    /build_files/20-enable-services.sh && \
+    /build_files/90-cleanup.sh
+
+LABEL containers.bootc=1
+LABEL ostree.bootable=1
+LABEL org.opencontainers.image.title="alpine-bootc-pi5"
+LABEL org.opencontainers.image.description="Experimental Alpine Linux bootc image for Raspberry Pi 5"
+
+RUN bootc container lint || true
+
+CMD ["/sbin/init"]

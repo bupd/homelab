@@ -1,0 +1,18 @@
+image := env("IMAGE", "localhost/alpine-bootc-pi5")
+tag := env("TAG", "latest")
+platform := env("PLATFORM", "linux/arm64")
+
+default:
+    @just --list
+
+build:
+    podman build --platform {{platform}} -t {{image}}:{{tag}} -f Containerfile .
+
+shell:
+    podman run --rm -it --platform {{platform}} --privileged {{image}}:{{tag}} /bin/sh
+
+lint:
+    podman run --rm --platform {{platform}} --privileged {{image}}:{{tag}} bootc container lint
+
+inspect:
+    podman inspect {{image}}:{{tag}} | jq '.[0].Config.Labels'
