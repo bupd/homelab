@@ -8,8 +8,7 @@ kernel="$(find /lib/modules -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | sor
 mkinitfs -o /usr/lib/rpi-boot/initramfs-rpi "$kernel"
 
 mkdir -p /usr/lib
-mv /lib/modules /usr/lib/modules
-ln -s ../usr/lib/modules /lib/modules
+cp -a /lib/modules /usr/lib/modules
 
 rm -rf /boot /home /root /srv /opt /mnt /var/cache/apk/*
 
