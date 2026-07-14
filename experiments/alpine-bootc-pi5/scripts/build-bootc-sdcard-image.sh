@@ -5,7 +5,7 @@ image="${IMAGE:-ghcr.io/bupd/homelab/bootc-alpine-arm64}"
 tag="${TAG:-latest}"
 target_imgref="${TARGET_IMGREF:-${image}:${tag}}"
 out="${OUT:-alpine-bootc-pi5.img}"
-size="${SIZE:-4G}"
+size="${SIZE:-1900M}"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
