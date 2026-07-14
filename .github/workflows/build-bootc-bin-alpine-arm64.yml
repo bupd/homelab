@@ -61,9 +61,18 @@ jobs:
       - name: Build bootc binary image
         working-directory: experiments/alpine-bootc-pi5
         run: |
+          created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           podman build \
             --platform linux/arm64 \
             --build-arg BOOTC_VERSION="${{ steps.release.outputs.version }}" \
+            --label "org.opencontainers.image.created=${created}" \
+            --label "org.opencontainers.image.description=bootc release binary built natively on Alpine ARM64" \
+            --label org.opencontainers.image.licenses=Apache-2.0 \
+            --label "org.opencontainers.image.source=https://github.com/bootc-dev/bootc/releases/tag/${{ steps.release.outputs.tag }}" \
+            --label org.opencontainers.image.title=bootc-bin-alpine-arm64 \
+            --label "org.opencontainers.image.url=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.vendor=${GITHUB_REPOSITORY_OWNER}" \
+            --label "org.opencontainers.image.version=${{ steps.release.outputs.tag }}" \
             -t "${IMAGE}:${{ steps.release.outputs.tag }}" \
             -t "${IMAGE}:latest" \
             -f bootc-bin/Containerfile \

@@ -43,9 +43,26 @@ jobs:
       - name: Build
         working-directory: experiments/alpine-bootc-pi5
         run: |
+          created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           podman build \
             --platform linux/arm64 \
             --build-arg BOOTC_BIN_IMAGE="${BOOTC_BIN_IMAGE}" \
+            --label containers.bootc=1 \
+            --label ostree.bootable=1 \
+            --label ostree.linux=rpi \
+            --label io.artifacthub.package.deprecated=false \
+            --label "io.artifacthub.package.keywords=bootc,alpine,raspberry-pi,k3s,homelab" \
+            --label "io.artifacthub.package.maintainers=[{\"name\":\"bupd\"}]" \
+            --label "io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/refs/heads/main/README.md" \
+            --label "org.opencontainers.image.created=${created}" \
+            --label org.opencontainers.image.description="Experimental Alpine Linux bootc image for Raspberry Pi 5" \
+            --label org.opencontainers.image.licenses=GPL-3.0-only \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}/tree/${GITHUB_SHA}/experiments/alpine-bootc-pi5" \
+            --label org.opencontainers.image.title=alpine-bootc-pi5 \
+            --label "org.opencontainers.image.url=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.vendor=${GITHUB_REPOSITORY_OWNER}" \
+            --label "org.opencontainers.image.version=${GITHUB_SHA}" \
             -t "${IMAGE}:latest" \
             -t "${IMAGE}:${GITHUB_SHA}" \
             -f Containerfile \
