@@ -7,6 +7,10 @@ cp -a /boot/. /usr/lib/rpi-boot/
 kernel="$(find /lib/modules -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | sort -V | tail -n 1)"
 mkinitfs -o /usr/lib/rpi-boot/initramfs-rpi "$kernel"
 
+mkdir -p /usr/lib
+mv /lib/modules /usr/lib/modules
+ln -s ../usr/lib/modules /lib/modules
+
 rm -rf /boot /home /root /srv /opt /mnt /var/cache/apk/*
 
 mkdir -p /sysroot /boot /usr/lib/ostree /var /var/home/bupd /var/roothome /var/srv /var/opt /var/mnt
