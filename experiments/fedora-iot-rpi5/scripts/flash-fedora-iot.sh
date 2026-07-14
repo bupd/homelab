@@ -4,7 +4,7 @@ set -euo pipefail
 image_url="${IMAGE_URL:-https://download.fedoraproject.org/pub/alt/iot/44/IoT/aarch64/images/Fedora-IoT-raw-44-20260427.0.aarch64.raw.xz}"
 device=""
 target="${TARGET:-rpi4}"
-hostname="${HOSTNAME:-node2}"
+hostname="${NODE_HOSTNAME:-node2}"
 wifi_ssid="${WIFI_SSID:-}"
 wifi_psk="${WIFI_PSK:-}"
 yes="false"
@@ -28,7 +28,7 @@ Options:
 Environment defaults:
   IMAGE_URL=https://download.fedoraproject.org/pub/alt/iot/44/IoT/aarch64/images/Fedora-IoT-raw-44-20260427.0.aarch64.raw.xz
   TARGET=rpi4
-  HOSTNAME=node2
+  NODE_HOSTNAME=node2
   WIFI_SSID=
   WIFI_PSK=
 

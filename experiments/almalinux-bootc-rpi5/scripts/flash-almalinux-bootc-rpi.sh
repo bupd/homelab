@@ -3,7 +3,7 @@ set -euo pipefail
 
 image_url="${IMAGE_URL:-https://github.com/AlmaLinux/bootc-images-rpi/releases/download/2026-03-15-1/image-almalinux-bootc-rpi-gpt-10-20260316-arm64.raw.xz}"
 device=""
-hostname="${HOSTNAME:-node2}"
+hostname="${NODE_HOSTNAME:-node2}"
 wifi_ssid="${WIFI_SSID:-}"
 wifi_psk="${WIFI_PSK:-}"
 yes="false"
@@ -25,7 +25,7 @@ Options:
 
 Environment defaults:
   IMAGE_URL=https://github.com/AlmaLinux/bootc-images-rpi/releases/download/2026-03-15-1/image-almalinux-bootc-rpi-gpt-10-20260316-arm64.raw.xz
-  HOSTNAME=node2
+  NODE_HOSTNAME=node2
   WIFI_SSID=
   WIFI_PSK=
 
@@ -88,6 +88,8 @@ done
 command -v curl >/dev/null 2>&1 || die "missing curl"
 command -v findmnt >/dev/null 2>&1 || die "missing findmnt"
 command -v lsblk >/dev/null 2>&1 || die "missing lsblk"
+command -v parted >/dev/null 2>&1 || die "missing parted"
+command -v sfdisk >/dev/null 2>&1 || die "missing sfdisk"
 command -v sudo >/dev/null 2>&1 || die "missing sudo"
 command -v xzcat >/dev/null 2>&1 || die "missing xzcat"
 
@@ -131,6 +133,20 @@ xzcat "$image_file" | sudo dd of="$device" bs=4M status=progress conv=fsync
 sudo partprobe "$device" || true
 sleep 3
 
+echo "==> expanding root partition to fill target device"
+sudo sfdisk --relocate gpt-bak-std "$device" || true
+root_label_part="$(lsblk -nrpo PATH,LABEL "$device" | awk '$2 == "root" {print $1; exit}')"
+if [[ -n "$root_label_part" ]]; then
+  root_part_num="$(lsblk -dnro PARTN "$root_label_part")"
+  if [[ -n "$root_part_num" ]]; then
+    sudo parted -s "$device" resizepart "$root_part_num" 100%
+    sudo partprobe "$device" || true
+    sleep 3
+  fi
+else
+  echo "warning: no partition labelled root found; leaving image root size unchanged" >&2
+fi
+
 echo "==> locating OSTree root partition"
 root_part=""
 while read -r part fstype; do
@@ -151,6 +167,18 @@ while read -r part fstype; do
 done < <(lsblk -nrpo PATH,FSTYPE "$device")
 
 [[ -n "$root_part" ]] || die "could not find OSTree root filesystem partition on $device"
+root_fstype="$(lsblk -dnro FSTYPE "$root_part")"
+case "$root_fstype" in
+  xfs)
+    command -v xfs_growfs >/dev/null 2>&1 && sudo xfs_growfs "$mnt_dir" >/dev/null
+    ;;
+  ext4)
+    command -v resize2fs >/dev/null 2>&1 && sudo resize2fs "$root_part" >/dev/null
+    ;;
+  btrfs)
+    command -v btrfs >/dev/null 2>&1 && sudo btrfs filesystem resize max "$mnt_dir" >/dev/null
+    ;;
+esac
 deploy_dir="$(sudo find "$mnt_dir/ostree/deploy" -mindepth 3 -maxdepth 3 -path '*/deploy/*.0' -type d | sort | tail -n 1 || true)"
 [[ -n "$deploy_dir" ]] || die "could not find bootc OSTree deployment"
 etc_dir="$deploy_dir/etc"
