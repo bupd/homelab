@@ -46,6 +46,7 @@ jobs:
       - name: Build bootc SD card image
         working-directory: experiments/alpine-bootc-pi5
         run: |
+          set -o pipefail
           sudo IMAGE="${IMAGE}" TAG="${TAG}" TARGET_IMGREF="${IMAGE}:${TAG}" OUT=alpine-bootc-pi5.img SIZE=16G \
             scripts/build-bootc-sdcard-image.sh 2>&1 | tee bootc-sdcard-build.log
           sudo zstd -T0 -19 alpine-bootc-pi5.img -o alpine-bootc-pi5.img.zst
