@@ -7,6 +7,10 @@ on:
         description: "Pi bootc image tag to install onto the SD card image"
         default: latest
         required: true
+      size:
+        description: "Raw SD card image size"
+        default: 4G
+        required: true
   push:
     branches:
       - main
@@ -23,6 +27,7 @@ permissions:
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/bootc-alpine-arm64
   TAG: ${{ github.event.inputs.tag || 'latest' }}
+  SIZE: ${{ github.event.inputs.size || '4G' }}
 
 jobs:
   build-image:
@@ -47,7 +52,7 @@ jobs:
         working-directory: experiments/alpine-bootc-pi5
         run: |
           set -o pipefail
-          sudo IMAGE="${IMAGE}" TAG="${TAG}" TARGET_IMGREF="${IMAGE}:${TAG}" OUT=alpine-bootc-pi5.img SIZE=16G \
+          sudo IMAGE="${IMAGE}" TAG="${TAG}" TARGET_IMGREF="${IMAGE}:${TAG}" OUT=alpine-bootc-pi5.img SIZE="${SIZE}" \
             scripts/build-bootc-sdcard-image.sh 2>&1 | tee bootc-sdcard-build.log
           sudo zstd -T0 -19 alpine-bootc-pi5.img -o alpine-bootc-pi5.img.zst
           sudo chown "$USER:$USER" alpine-bootc-pi5.img.zst bootc-sdcard-build.log
