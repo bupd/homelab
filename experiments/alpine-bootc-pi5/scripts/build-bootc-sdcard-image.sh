@@ -15,6 +15,7 @@ require_cmd() {
 }
 
 require_cmd awk
+require_cmd blkid
 require_cmd find
 require_cmd losetup
 require_cmd lsblk
@@ -65,6 +66,8 @@ fi
 udevadm settle || true
 mkfs.vfat -F 32 -n BOOT "$boot_part"
 mkfs.ext4 -F -L ALPINE_BOOTC "$root_part"
+boot_uuid="$(blkid -s UUID -o value "$boot_part")"
+root_uuid="$(blkid -s UUID -o value "$root_part")"
 
 mount "$root_part" "$root_mnt"
 mkdir -p "$root_mnt/boot"
@@ -100,6 +103,8 @@ podman run --rm --privileged --pid=host \
   -e BOOT_MINOR="${boot_majmin#*:}" \
   -e ROOT_MAJOR="${root_majmin%:*}" \
   -e ROOT_MINOR="${root_majmin#*:}" \
+  -e BOOT_UUID="$boot_uuid" \
+  -e ROOT_UUID="$root_uuid" \
   -e TARGET_IMGREF="$target_imgref" \
   -v /dev:/dev \
   -v /sys:/sys:ro \
@@ -125,8 +130,8 @@ podman run --rm --privileged --pid=host \
 
     bootc install to-filesystem \
     --bootloader none \
-    --root-mount-spec LABEL=ALPINE_BOOTC \
-    --boot-mount-spec LABEL=BOOT \
+    --root-mount-spec "UUID=$ROOT_UUID" \
+    --boot-mount-spec "UUID=$BOOT_UUID" \
     --target-imgref "$TARGET_IMGREF" \
     --skip-fetch-check \
     /target
