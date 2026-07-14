@@ -37,6 +37,7 @@ mkdir -p "$root_mnt" "$boot_mnt"
 
 cleanup() {
   set +e
+  mountpoint -q "$root_mnt/boot" && umount "$root_mnt/boot"
   mountpoint -q "$boot_mnt" && umount "$boot_mnt"
   mountpoint -q "$root_mnt" && umount "$root_mnt"
   [[ -n "$loopdev" ]] && losetup -d "$loopdev" >/dev/null 2>&1
@@ -68,7 +69,15 @@ mount "$root_part" "$root_mnt"
 mkdir -p "$root_mnt/boot"
 mount "$boot_part" "$root_mnt/boot"
 
+echo "== target mounts =="
+findmnt -R "$root_mnt"
+ls -l "$loopdev" "$boot_part" "$root_part"
+
 podman run --rm --privileged --pid=host \
+  --security-opt label=type:unconfined_t \
+  --device "$loopdev" \
+  --device "$boot_part" \
+  --device "$root_part" \
   -v /dev:/dev \
   -v /var/lib/containers:/var/lib/containers \
   -v "$root_mnt:/target" \
