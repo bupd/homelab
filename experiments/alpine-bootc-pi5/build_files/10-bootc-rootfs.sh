@@ -9,6 +9,8 @@ mkinitfs -o /usr/lib/rpi-boot/initramfs-rpi "$kernel"
 
 mkdir -p /usr/lib
 cp -a /lib/modules /usr/lib/modules
+install -Dm0644 /usr/lib/rpi-boot/vmlinuz-rpi "/usr/lib/modules/$kernel/vmlinuz"
+install -Dm0644 /usr/lib/rpi-boot/initramfs-rpi "/usr/lib/modules/$kernel/initramfs.img"
 
 rm -rf /boot /home /root /srv /opt /mnt /var/cache/apk/*
 
