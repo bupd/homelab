@@ -81,6 +81,10 @@ majmin() {
 loop_majmin="$(majmin "$loopdev")"
 boot_majmin="$(majmin "$boot_part")"
 root_majmin="$(majmin "$root_part")"
+udev_mount=()
+if [[ -d /run/udev ]]; then
+  udev_mount=(-v /run/udev:/run/udev:ro)
+fi
 
 podman run --rm --privileged --pid=host \
   --security-opt label=type:unconfined_t \
@@ -98,6 +102,8 @@ podman run --rm --privileged --pid=host \
   -e ROOT_MINOR="${root_majmin#*:}" \
   -e TARGET_IMGREF="$target_imgref" \
   -v /dev:/dev \
+  -v /sys:/sys:ro \
+  "${udev_mount[@]}" \
   -v /var/lib/containers:/var/lib/containers \
   -v "$root_mnt:/target" \
   "${image}:${tag}" \
