@@ -13,7 +13,6 @@ force="0"
 action="${1:-}"
 wifi_ssid="${WIFI_SSID:-}"
 wifi_psk="${WIFI_PSK:-}"
-bupd_password="${BUPD_PASSWORD:-}"
 
 usage() {
   cat <<'EOF'
@@ -29,13 +28,11 @@ Environment:
   PLATFORM=linux/arm64
   WIFI_SSID='BUPD'
   WIFI_PSK='...'
-  BUPD_PASSWORD='...'
 
 Notes:
   - flash wipes the target device.
-  - BUPD_PASSWORD unlocks bupd with a temporary password and enables SSH
-    password login. Without it, bupd gets an unknown random password so
-    public-key SSH works while password login remains disabled.
+  - bupd gets an unknown random password so public-key SSH works while
+    password login remains disabled.
   - this is the first Alpine+bootc Pi 5 experiment: it flashes a Pi boot
     partition plus an Alpine rootfs that contains bootc, Podman, K3s,
     Tailscale, Cloudflared, Wi-Fi config, and OpenRC services.
@@ -70,10 +67,6 @@ parse_args() {
         ;;
       --wifi-psk)
         wifi_psk="${2:-}"
-        shift 2
-        ;;
-      --bupd-password)
-        bupd_password="${2:-}"
         shift 2
         ;;
       *)
@@ -258,15 +251,7 @@ EOF
 
   echo "==> configuring bupd login"
   local login_password login_hash
-  if [[ -n "$bupd_password" ]]; then
-    login_password="$bupd_password"
-    sudo sed -i \
-      -e 's/^PasswordAuthentication .*/PasswordAuthentication yes/' \
-      -e 's/^KbdInteractiveAuthentication .*/KbdInteractiveAuthentication yes/' \
-      "$root_mnt/etc/ssh/sshd_config.d/10-homelab.conf"
-  else
-    login_password="$(openssl rand -base64 32)"
-  fi
+  login_password="$(openssl rand -base64 32)"
   login_hash="$(openssl passwd -6 "$login_password")"
   sudo awk -F: -v OFS=: -v hash="$login_hash" '{ if ($1 == "bupd") $2 = hash; print }' \
     "$root_mnt/etc/shadow" | sudo tee "$root_mnt/etc/shadow.tmp" >/dev/null
