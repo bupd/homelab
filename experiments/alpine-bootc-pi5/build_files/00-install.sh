@@ -29,6 +29,7 @@ apk add --no-cache \
     k3s \
     linux-firmware-brcm \
     linux-rpi \
+    mkinitfs \
     netavark \
     openssh \
     openssl \
