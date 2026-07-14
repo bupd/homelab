@@ -47,6 +47,8 @@ apk add --no-cache \
     tailscale \
     tmux \
     ufw \
+    util-linux \
+    util-linux-misc \
     wget \
     wireless-regdb \
     wireguard-tools \
