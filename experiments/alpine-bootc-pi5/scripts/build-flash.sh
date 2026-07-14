@@ -34,8 +34,8 @@ Notes:
   - bupd gets an unknown random password so public-key SSH works while
     password login remains disabled.
   - this is the first Alpine+bootc Pi 5 experiment: it flashes a Pi boot
-    partition plus an Alpine rootfs that contains bootc, Podman, K3s,
-    Tailscale, Cloudflared, Wi-Fi config, and OpenRC services.
+    partition plus a lean Alpine rootfs with bootc, Podman, Wi-Fi, SSH,
+    and only minimal OpenRC services enabled.
 EOF
 }
 
@@ -127,11 +127,8 @@ smoke_image() {
     test -f /usr/lib/rpi-boot/vmlinuz-rpi
     test -f /usr/lib/rpi-boot/initramfs-rpi
     test -f /etc/wpa_supplicant/wpa_supplicant.conf
-    test -f /etc/init.d/k3s
     command -v podman
-    command -v k3s
-    command -v tailscale
-    command -v cloudflared
+    command -v sshd
   '
 }
 

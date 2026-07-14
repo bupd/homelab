@@ -13,7 +13,7 @@ COPY --from=ctx /build_files /build_files
 COPY --from=ctx /system_files /
 COPY --from=bootc-bin /usr/bin/bootc /usr/bin/bootc
 
-RUN chmod +x /build_files/*.sh /etc/init.d/k3s /etc/init.d/cloudflared && \
+RUN chmod +x /build_files/*.sh && \
     /build_files/00-install.sh && \
     /build_files/10-bootc-rootfs.sh && \
     /build_files/20-enable-services.sh && \
