@@ -226,7 +226,7 @@ flash_device() {
   cid=""
 
   echo "==> installing Raspberry Pi boot files"
-  sudo cp -a "$root_mnt/usr/lib/rpi-boot/." "$boot_mnt/"
+  sudo tar --exclude='./boot' -C "$root_mnt/usr/lib/rpi-boot" -cpf - . | sudo tar -C "$boot_mnt" -xpf -
   sudo tee "$boot_mnt/config.txt" >/dev/null <<'EOF'
 kernel=vmlinuz-rpi
 initramfs initramfs-rpi
