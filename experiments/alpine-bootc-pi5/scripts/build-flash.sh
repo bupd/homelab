@@ -178,12 +178,13 @@ flash_device() {
   ensure_flash_ok
   smoke_image
 
-  local boot_part root_part tmp boot_mnt root_mnt cid
+  local boot_part root_part
   boot_part="$(part_path "$device" 1)"
   root_part="$(part_path "$device" 2)"
   tmp="$(mktemp -d)"
   boot_mnt="$tmp/boot"
   root_mnt="$tmp/root"
+  cid=""
   mkdir -p "$boot_mnt" "$root_mnt"
 
   cleanup() {
@@ -204,11 +205,16 @@ flash_device() {
   sudo parted -s "$device" set 1 boot on
   sudo parted -s "$device" mkpart primary ext4 513MiB 100%
   sudo partprobe "$device" || true
+  command -v udevadm >/dev/null 2>&1 && sudo udevadm settle || true
   sleep 2
+  unmount_device
 
   echo "==> formatting"
   sudo mkfs.vfat -F 32 -n BOOT "$boot_part"
   sudo mkfs.ext4 -F -L ALPINE_BOOTC "$root_part"
+  command -v udevadm >/dev/null 2>&1 && sudo udevadm settle || true
+  sleep 1
+  unmount_device
 
   sudo mount "$root_part" "$root_mnt"
   sudo mount "$boot_part" "$boot_mnt"
