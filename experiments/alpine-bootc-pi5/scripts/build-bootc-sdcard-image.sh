@@ -163,7 +163,7 @@ if [[ -z "$deployment" ]]; then
   exit 1
 fi
 
-tar --exclude='./boot' -C "$deployment/usr/lib/rpi-boot" -cpf - . | tar -C "$boot_mnt" -xpf -
+tar --hard-dereference --exclude='./boot' -C "$deployment/usr/lib/rpi-boot" -cpf - . | tar -C "$boot_mnt" -xpf -
 
 entry="$(find "$root_mnt/boot" -path '*/entries/*.conf' -type f | sort | tail -n 1 || true)"
 if [[ -z "$entry" ]]; then
