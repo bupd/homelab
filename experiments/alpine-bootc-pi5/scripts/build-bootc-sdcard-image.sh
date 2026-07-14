@@ -157,7 +157,7 @@ done
 echo "== installing Raspberry Pi firmware boot files =="
 mount "$boot_part" "$boot_mnt"
 
-deployment="$(find "$root_mnt/ostree/deploy" -path '*/deploy/*.0' -type d | sort | tail -n 1)"
+deployment="$(find "$root_mnt/ostree/deploy" -mindepth 3 -maxdepth 3 -path '*/deploy/*.0' -type d | sort | tail -n 1)"
 if [[ -z "$deployment" ]]; then
   echo "could not find bootc deployment under ostree/deploy" >&2
   exit 1
@@ -165,7 +165,7 @@ fi
 
 tar --exclude='./boot' -C "$deployment/usr/lib/rpi-boot" -cpf - . | tar -C "$boot_mnt" -xpf -
 
-entry="$(find "$root_mnt/boot/loader/entries" -name '*.conf' -type f | sort | tail -n 1 || true)"
+entry="$(find "$root_mnt/boot" -path '*/entries/*.conf' -type f | sort | tail -n 1 || true)"
 if [[ -z "$entry" ]]; then
   echo "bootc did not generate a BLS entry; cannot derive Pi cmdline" >&2
   exit 1
