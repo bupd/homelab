@@ -3,34 +3,14 @@ FROM scratch AS ctx
 COPY build_files /build_files
 COPY system_files /system_files
 
-FROM --platform=$TARGETPLATFORM alpine:3.23 AS bootc-builder
-
-RUN apk add --no-cache \
-    bash \
-    build-base \
-    cargo \
-    git \
-    libarchive-dev \
-    openssl-dev \
-    ostree-dev \
-    pkgconf \
-    rust
-
-WORKDIR /src/bootc
-RUN git clone --depth 1 https://github.com/bootc-dev/bootc.git . && \
-    sed -i \
-      -e 's/libc::OVERLAYFS_SUPER_MAGIC/(libc::OVERLAYFS_SUPER_MAGIC as u64)/g' \
-      -e 's/libc::MSDOS_SUPER_MAGIC/(libc::MSDOS_SUPER_MAGIC as u64)/g' \
-      -e 's/libc::TMPFS_MAGIC/(libc::TMPFS_MAGIC as u64)/g' \
-      crates/lib/src/generator.rs crates/lib/src/install.rs && \
-    cargo build --locked --bin bootc && \
-    install -Dm0755 target/debug/bootc /output/usr/bin/bootc
+ARG BOOTC_BIN_IMAGE=ghcr.io/bupd/homelab/bootc-bin-alpine-arm64:latest
+FROM --platform=$TARGETPLATFORM ${BOOTC_BIN_IMAGE} AS bootc-bin
 
 FROM --platform=$TARGETPLATFORM alpine:3.23
 
 COPY --from=ctx /build_files /build_files
 COPY --from=ctx /system_files /
-COPY --from=bootc-builder /output /
+COPY --from=bootc-bin /usr/bin/bootc /usr/bin/bootc
 
 RUN chmod +x /build_files/*.sh /etc/init.d/k3s /etc/init.d/cloudflared && \
     /build_files/00-install.sh && \

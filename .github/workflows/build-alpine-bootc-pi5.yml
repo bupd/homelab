@@ -2,13 +2,20 @@ name: Build Alpine bootc Pi 5 image
 
 on:
   workflow_dispatch:
+    inputs:
+      bootc_image:
+        description: "Published bootc binary image to copy from"
+        default: ghcr.io/bupd/homelab/bootc-bin-alpine-arm64:latest
+        required: true
   push:
     branches:
       - main
       - exp/**
     paths:
       - ".github/workflows/build-alpine-bootc-pi5.yml"
-      - "experiments/alpine-bootc-pi5/**"
+      - "experiments/alpine-bootc-pi5/Containerfile"
+      - "experiments/alpine-bootc-pi5/build_files/**"
+      - "experiments/alpine-bootc-pi5/system_files/**"
 
 permissions:
   contents: read
@@ -16,6 +23,7 @@ permissions:
 
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/bootc-alpine-arm64
+  BOOTC_BIN_IMAGE: ${{ github.event.inputs.bootc_image || 'ghcr.io/bupd/homelab/bootc-bin-alpine-arm64:latest' }}
 
 jobs:
   build:
@@ -35,7 +43,13 @@ jobs:
       - name: Build
         working-directory: experiments/alpine-bootc-pi5
         run: |
-          podman build --platform linux/arm64 -t "${IMAGE}:latest" -t "${IMAGE}:${GITHUB_SHA}" -f Containerfile .
+          podman build \
+            --platform linux/arm64 \
+            --build-arg BOOTC_BIN_IMAGE="${BOOTC_BIN_IMAGE}" \
+            -t "${IMAGE}:latest" \
+            -t "${IMAGE}:${GITHUB_SHA}" \
+            -f Containerfile \
+            .
 
       - name: Push
         run: |
