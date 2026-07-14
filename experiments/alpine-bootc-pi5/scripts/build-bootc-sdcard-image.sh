@@ -102,6 +102,8 @@ podman run --rm --privileged --pid=host \
   -e ROOT_MINOR="${root_majmin#*:}" \
   -e ROOT_UUID="$root_uuid" \
   -e TARGET_IMGREF="$target_imgref" \
+  -e RUST_BACKTRACE=1 \
+  -e RUST_LOG="${RUST_LOG:-debug}" \
   -v /dev:/dev \
   -v /sys:/sys:ro \
   "${udev_mount[@]}" \
@@ -123,6 +125,13 @@ podman run --rm --privileged --pid=host \
     ensure_block_node "$BOOT_PART" "$BOOT_MAJOR" "$BOOT_MINOR"
     ensure_block_node "$ROOT_PART" "$ROOT_MAJOR" "$ROOT_MINOR"
     ls -l "$LOOPDEV" "$BOOT_PART" "$ROOT_PART"
+    bootc --version
+    pwd
+    stat -c "%n type=%F dev=%D inode=%i mode=%a" / /target /target/. || true
+    readlink -ev /target || true
+    findmnt -T /target || true
+    mount | grep -E "(/target|loop0|ALPINE_BOOTC)" || true
+    ls -la /target
 
     bootc install to-filesystem \
     --bootloader none \
