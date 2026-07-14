@@ -13,6 +13,7 @@ force="0"
 action="${1:-}"
 wifi_ssid="${WIFI_SSID:-}"
 wifi_psk="${WIFI_PSK:-}"
+bupd_password="${BUPD_PASSWORD:-}"
 
 usage() {
   cat <<'EOF'
@@ -28,9 +29,13 @@ Environment:
   PLATFORM=linux/arm64
   WIFI_SSID='BUPD'
   WIFI_PSK='...'
+  BUPD_PASSWORD='...'
 
 Notes:
   - flash wipes the target device.
+  - BUPD_PASSWORD unlocks bupd with a temporary password and enables SSH
+    password login. Without it, bupd gets an unknown random password so
+    public-key SSH works while password login remains disabled.
   - this is the first Alpine+bootc Pi 5 experiment: it flashes a Pi boot
     partition plus an Alpine rootfs that contains bootc, Podman, K3s,
     Tailscale, Cloudflared, Wi-Fi config, and OpenRC services.
@@ -65,6 +70,10 @@ parse_args() {
         ;;
       --wifi-psk)
         wifi_psk="${2:-}"
+        shift 2
+        ;;
+      --bupd-password)
+        bupd_password="${2:-}"
         shift 2
         ;;
       *)
@@ -170,6 +179,7 @@ flash_device() {
   require_cmd parted
   require_cmd mkfs.vfat
   require_cmd mkfs.ext4
+  require_cmd openssl
   require_cmd wipefs
   require_cmd partprobe
   if [[ -n "$wifi_ssid" || -n "$wifi_psk" ]]; then
@@ -245,6 +255,24 @@ LABEL=ALPINE_BOOTC / ext4 rw,relatime 0 1
 LABEL=BOOT /boot vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,errors=remount-ro 0 2
 tmpfs /tmp tmpfs nosuid,nodev 0 0
 EOF
+
+  echo "==> configuring bupd login"
+  local login_password login_hash
+  if [[ -n "$bupd_password" ]]; then
+    login_password="$bupd_password"
+    sudo sed -i \
+      -e 's/^PasswordAuthentication .*/PasswordAuthentication yes/' \
+      -e 's/^KbdInteractiveAuthentication .*/KbdInteractiveAuthentication yes/' \
+      "$root_mnt/etc/ssh/sshd_config.d/10-homelab.conf"
+  else
+    login_password="$(openssl rand -base64 32)"
+  fi
+  login_hash="$(openssl passwd -6 "$login_password")"
+  sudo awk -F: -v OFS=: -v hash="$login_hash" '{ if ($1 == "bupd") $2 = hash; print }' \
+    "$root_mnt/etc/shadow" | sudo tee "$root_mnt/etc/shadow.tmp" >/dev/null
+  sudo chown root:shadow "$root_mnt/etc/shadow.tmp" 2>/dev/null || sudo chown root:root "$root_mnt/etc/shadow.tmp"
+  sudo chmod 0640 "$root_mnt/etc/shadow.tmp"
+  sudo mv "$root_mnt/etc/shadow.tmp" "$root_mnt/etc/shadow"
 
   sudo install -d -m 0700 -o 1000 -g 1000 "$root_mnt/var/home/bupd/.ssh"
   if compgen -G "$HOME/.ssh/*.pub" >/dev/null; then
