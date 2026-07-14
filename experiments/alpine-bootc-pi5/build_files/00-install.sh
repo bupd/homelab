@@ -27,6 +27,8 @@ apk add --no-cache \
     iptables \
     iwd \
     k3s \
+    libarchive \
+    libgcc \
     linux-firmware-brcm \
     linux-rpi \
     mkinitfs \
