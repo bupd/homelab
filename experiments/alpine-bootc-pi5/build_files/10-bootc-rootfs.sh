@@ -4,7 +4,9 @@ set -eux
 mkdir -p /usr/lib/rpi-boot
 cp -a /boot/. /usr/lib/rpi-boot/
 
-kernel="$(find /lib/modules -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | sort -V | tail -n 1)"
+kernel_path="$(find /lib/modules -maxdepth 1 -mindepth 1 -type d | sort -V | tail -n 1)"
+kernel="${kernel_path##*/}"
+[ -n "$kernel" ]
 mkinitfs -o /usr/lib/rpi-boot/initramfs-rpi "$kernel"
 
 mkdir -p /usr/lib

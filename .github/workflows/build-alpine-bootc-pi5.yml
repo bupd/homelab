@@ -51,7 +51,7 @@ jobs:
             --label ostree.bootable=1 \
             --label ostree.linux=rpi \
             --label io.artifacthub.package.deprecated=false \
-            --label "io.artifacthub.package.keywords=bootc,alpine,raspberry-pi,k3s,homelab" \
+            --label "io.artifacthub.package.keywords=bootc,alpine,raspberry-pi,homelab" \
             --label "io.artifacthub.package.maintainers=[{\"name\":\"bupd\"}]" \
             --label "io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/refs/heads/main/README.md" \
             --label "org.opencontainers.image.created=${created}" \
