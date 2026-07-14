@@ -1,0 +1,43 @@
+name: Build Alpine bootc Pi 5 image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - exp/**
+    paths:
+      - ".github/workflows/build-alpine-bootc-pi5.yml"
+      - "experiments/alpine-bootc-pi5/**"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/bootc-alpine-arm64
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build
+        working-directory: experiments/alpine-bootc-pi5
+        run: |
+          podman build --platform linux/arm64 -t "${IMAGE}:latest" -t "${IMAGE}:${GITHUB_SHA}" -f Containerfile .
+
+      - name: Push
+        run: |
+          podman push "${IMAGE}:latest"
+          podman push "${IMAGE}:${GITHUB_SHA}"
