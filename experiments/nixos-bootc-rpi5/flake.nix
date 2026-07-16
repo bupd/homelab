@@ -2,8 +2,8 @@
   description = "NixOS bootc image for Raspberry Pi 5";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
-    raspberry-pi-nix.url = "github:nix-community/raspberry-pi-nix/master";
+    nixpkgs.url = "https://channels.nixos.org/nixos-24.11/nixexprs.tar.xz";
+    raspberry-pi-nix.url = "git+https://github.com/nix-community/raspberry-pi-nix?ref=master";
   };
 
   outputs = { self, nixpkgs, raspberry-pi-nix }:

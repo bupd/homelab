@@ -8,6 +8,13 @@ The Raspberry Pi boot method is preserved. The Pi EEPROM firmware reads the FAT
 and BLS entries under `/boot`. `rpi-bootc-sync` adapts the selected bootc BLS
 entry into Raspberry Pi firmware files under `/boot/firmware`.
 
+This follows the Pi 5 EEPROM boot flow: the first-stage ROM loads the EEPROM
+second-stage bootloader, the EEPROM bootloader scans boot modes such as SD,
+network, USB, and NVMe, and on Pi 5 the firmware loads the Linux kernel directly
+instead of loading `start.elf` from the boot partition. The generated boot
+partition therefore keeps `bootc-vmlinuz`, `bootc-initramfs.img`, DTBs,
+overlays, `config.txt`, and `cmdline.txt` at firmware-visible paths.
+
 ## Flow
 
 ```text
@@ -15,7 +22,7 @@ NixOS flake
   -> NixOS aarch64 system closure + Pi 5 kernel/initramfs/firmware
   -> bootc-compatible OCI image
   -> bootc install to ext4 root partition
-  -> rpi-bootc-sync generates FAT BOOT config.txt/cmdline.txt
+  -> rpi-bootc-sync generates FAT BOOT kernel/initramfs/config.txt/cmdline.txt
   -> Raspberry Pi firmware boots the bootc-selected NixOS deployment
 ```
 
@@ -77,6 +84,11 @@ display or inbound network access to the Pi.
 
 The local workstation is x86_64, so the real build path is GitHub Actions on
 `ubuntu-24.04-arm`.
+
+The flake intentionally avoids unlocked `github:` inputs for the main NixOS
+channel because the GitHub commits API has been unreliable during these builds.
+`nixpkgs` comes from the NixOS channel tarball, and the Raspberry Pi module is
+fetched through Git.
 
 Use the `Build NixOS bootc Raspberry Pi 5` workflow. For a debug SD image,
 provide the workflow inputs and repository secrets:
