@@ -84,8 +84,10 @@
     wantedBy = [ "multi-user.target" ];
     after = [ "local-fs.target" ];
     before = [ "sshd.service" "bootsy-reverse-ssh.service" "bootsy-beacon.service" ];
-    requiresMountsFor = [ "/boot/firmware" ];
     path = [ pkgs.coreutils pkgs.gawk pkgs.gnugrep pkgs.gnused pkgs.shadow pkgs.systemd ];
+    unitConfig = {
+      RequiresMountsFor = [ "/boot/firmware" ];
+    };
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "/usr/local/sbin/bootsy-headless-apply";
@@ -96,8 +98,8 @@
     description = "Sync bootc BLS deployment into Raspberry Pi firmware boot partition";
     wantedBy = [ "multi-user.target" ];
     after = [ "local-fs.target" ];
-    requiresMountsFor = [ "/boot" "/boot/firmware" ];
     unitConfig = {
+      RequiresMountsFor = [ "/boot" "/boot/firmware" ];
       ConditionPathIsDirectory = [ "/boot/firmware" "/boot/loader/entries" ];
     };
     serviceConfig = {
