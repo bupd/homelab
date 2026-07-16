@@ -107,14 +107,43 @@ image artifact.
 
 ## Local commands
 
-These require an aarch64 Linux builder with Nix and Podman:
+The local workstation can use QEMU user-mode aarch64 through Podman. This is
+slower than GitHub's native ARM64 runner, but it catches rootfs layout and image
+assembly problems before writing an SD card.
 
 ```sh
-scripts/build-rootfs-tar.sh
-podman build --platform linux/arm64 -t ghcr.io/bupd/homelab/nixos-bootc-rpi5:latest .
-sudo IMAGE=ghcr.io/bupd/homelab/nixos-bootc-rpi5 TAG=latest scripts/build-bootc-sdcard-image.sh
+scripts/local-build-rootfs-podman.sh
+scripts/test-rootfs-layout.sh build/out/nixos-bootc-rpi5-rootfs.tar
+sudo podman build --platform linux/arm64 \
+  --build-arg ROOTFS_TAR=build/out/nixos-bootc-rpi5-rootfs.tar \
+  -t localhost/nixos-bootc-rpi5:local .
+sudo IMAGE=localhost/nixos-bootc-rpi5 TAG=local \
+  OUT=build/out/nixos-bootc-rpi5.img SIZE=8G \
+  scripts/build-bootc-sdcard-image.sh
 ```
 
 QEMU is not a complete Pi 5 firmware emulator. It can smoke-test generic ARM64
 Linux pieces, but real validation of `config.txt`, `cmdline.txt`, DTBs, and the
 Pi 5 EEPROM path still requires Raspberry Pi 5 hardware.
+
+## Flashing
+
+Inspect the target before writing:
+
+```sh
+lsblk -o NAME,PATH,SIZE,TYPE,FSTYPE,LABEL,UUID,MOUNTPOINTS /dev/sdX
+```
+
+Then write the validated image:
+
+```sh
+sudo scripts/flash-sdcard.sh \
+  --image build/out/nixos-bootc-rpi5.img \
+  --device /dev/sdX \
+  --yes-i-know-this-will-erase
+```
+
+For the current headless setup, the host needs an SSH server reachable from the
+Pi over Ethernet. The SD image writes `bootsy-debug.env`, `authorized_keys`, and
+`bootsy-reverse-ssh.key` to the FAT `BOOT` partition when the matching
+environment variables are supplied to `build-bootc-sdcard-image.sh`.
