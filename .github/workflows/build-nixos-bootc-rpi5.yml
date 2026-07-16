@@ -1,0 +1,145 @@
+name: Build NixOS bootc Raspberry Pi 5
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag"
+        default: latest
+        required: true
+      sdcard_size:
+        description: "Raw SD card image size"
+        default: 3900M
+        required: true
+      reverse_ssh_host:
+        description: "Host for the Pi to SSH back to"
+        required: false
+      reverse_ssh_user:
+        description: "SSH user on the host"
+        default: bupd
+        required: true
+      reverse_ssh_port:
+        description: "SSH port on the host"
+        default: "22"
+        required: true
+      reverse_ssh_remote_port:
+        description: "Remote tunnel port opened on the host"
+        default: "2222"
+        required: true
+  push:
+    branches:
+      - main
+      - agent/**
+      - feat/**
+      - exp/**
+    paths:
+      - ".github/workflows/build-nixos-bootc-rpi5.yml"
+      - "experiments/nixos-bootc-rpi5/**"
+  pull_request:
+    paths:
+      - ".github/workflows/build-nixos-bootc-rpi5.yml"
+      - "experiments/nixos-bootc-rpi5/**"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/nixos-bootc-rpi5
+  TAG: ${{ github.event.inputs.tag || github.sha }}
+  BOOTC_BIN_IMAGE: ghcr.io/bupd/homelab/bootc-bin-alpine-arm64:latest
+  BOOTSY_REVERSE_SSH_ENABLE: "1"
+  BOOTSY_REVERSE_SSH_HOST: ${{ github.event.inputs.reverse_ssh_host || secrets.BOOTSY_REVERSE_SSH_HOST }}
+  BOOTSY_REVERSE_SSH_USER: ${{ github.event.inputs.reverse_ssh_user || secrets.BOOTSY_REVERSE_SSH_USER || 'bupd' }}
+  BOOTSY_REVERSE_SSH_PORT: ${{ github.event.inputs.reverse_ssh_port || secrets.BOOTSY_REVERSE_SSH_PORT || '22' }}
+  BOOTSY_REVERSE_SSH_REMOTE_BIND: "127.0.0.1"
+  BOOTSY_REVERSE_SSH_REMOTE_PORT: ${{ github.event.inputs.reverse_ssh_remote_port || secrets.BOOTSY_REVERSE_SSH_REMOTE_PORT || '2222' }}
+  BOOTSY_REVERSE_SSH_PRIVATE_KEY: ${{ secrets.BOOTSY_REVERSE_SSH_PRIVATE_KEY }}
+  BOOTSY_PI_AUTHORIZED_KEYS: ${{ secrets.BOOTSY_PI_AUTHORIZED_KEYS }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            substituters = https://cache.nixos.org https://nix-community.cachix.org
+            trusted-public-keys = nix-community.cachix.org-1:mB9FShGytQvO4Kbm9v71u6hrM7jDMb36pG8zX7rCUUs= cache.nixos.org-1:6NCHdD59X431o0gWfdf4dMRV8U7kNLL5A87L+QuxEFs=
+
+      - name: Install image tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dosfstools podman zstd
+
+      - name: Build NixOS rootfs tarball
+        working-directory: experiments/nixos-bootc-rpi5
+        run: |
+          scripts/build-rootfs-tar.sh
+          scripts/test-rpi-bootc-sync.sh
+          scripts/test-rootfs-layout.sh build/nixos-bootc-rpi5-rootfs.tar
+
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build bootc image
+        working-directory: experiments/nixos-bootc-rpi5
+        run: |
+          created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          sudo podman build \
+            --platform linux/arm64 \
+            --build-arg ROOTFS_TAR=build/nixos-bootc-rpi5-rootfs.tar \
+            --build-arg BOOTC_BIN_IMAGE="${BOOTC_BIN_IMAGE}" \
+            --label containers.bootc=1 \
+            --label ostree.bootable=1 \
+            --label ostree.linux=rpi \
+            --label "org.opencontainers.image.created=${created}" \
+            --label org.opencontainers.image.description="Experimental NixOS bootc image for Raspberry Pi 5" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}/tree/${GITHUB_SHA}/experiments/nixos-bootc-rpi5" \
+            --label org.opencontainers.image.title=nixos-bootc-rpi5 \
+            --label "org.opencontainers.image.url=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.vendor=${GITHUB_REPOSITORY_OWNER}" \
+            --label "org.opencontainers.image.version=${TAG}" \
+            -t "${IMAGE}:${TAG}" \
+            -t "${IMAGE}:latest" \
+            -f Containerfile \
+            .
+
+      - name: Smoke bootc tooling
+        run: |
+          sudo podman run --rm --platform linux/arm64 --entrypoint /usr/local/sbin/rpi-bootc-sync "${IMAGE}:${TAG}" --help
+          sudo podman run --rm --platform linux/arm64 --entrypoint /usr/bin/bootc "${IMAGE}:${TAG}" --version
+
+      - name: Push bootc image
+        if: github.event_name != 'pull_request'
+        run: |
+          sudo podman push "${IMAGE}:${TAG}"
+          sudo podman push "${IMAGE}:latest"
+
+      - name: Build bootc SD card image
+        if: github.event_name != 'pull_request'
+        working-directory: experiments/nixos-bootc-rpi5
+        run: |
+          set -o pipefail
+          sudo --preserve-env=IMAGE,TAG,BOOTSY_REVERSE_SSH_ENABLE,BOOTSY_REVERSE_SSH_HOST,BOOTSY_REVERSE_SSH_USER,BOOTSY_REVERSE_SSH_PORT,BOOTSY_REVERSE_SSH_REMOTE_BIND,BOOTSY_REVERSE_SSH_REMOTE_PORT,BOOTSY_REVERSE_SSH_PRIVATE_KEY,BOOTSY_PI_AUTHORIZED_KEYS \
+            OUT=nixos-bootc-rpi5.img SIZE="${{ github.event.inputs.sdcard_size || '3900M' }}" \
+            scripts/build-bootc-sdcard-image.sh 2>&1 | tee nixos-bootc-sdcard-build.log
+          sudo zstd -T0 -19 nixos-bootc-rpi5.img -o nixos-bootc-rpi5.img.zst
+          sudo chown "$USER:$USER" nixos-bootc-rpi5.img.zst nixos-bootc-sdcard-build.log
+
+      - name: Upload SD card image
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v5
+        with:
+          name: nixos-bootc-rpi5-sdcard
+          path: |
+            experiments/nixos-bootc-rpi5/nixos-bootc-rpi5.img.zst
+            experiments/nixos-bootc-rpi5/nixos-bootc-sdcard-build.log
+          if-no-files-found: error

@@ -1,0 +1,33 @@
+#!/bin/sh
+
+event="${1:-booting}"
+
+BOOTSY_BEACON_URL="${BOOTSY_BEACON_URL:-}"
+BOOTSY_BEACON_UDP_HOST="${BOOTSY_BEACON_UDP_HOST:-}"
+BOOTSY_BEACON_UDP_PORT="${BOOTSY_BEACON_UDP_PORT:-5514}"
+BOOTSY_BEACON_TIMEOUT="${BOOTSY_BEACON_TIMEOUT:-5}"
+BOOTSY_BEACON_ID="${BOOTSY_BEACON_ID:-}"
+
+hostname_value="$(cat /etc/hostname 2>/dev/null || hostname 2>/dev/null || printf unknown)"
+machine_id="$(cat /etc/machine-id 2>/dev/null || true)"
+uptime_value="$(cut -d. -f1 /proc/uptime 2>/dev/null || printf 0)"
+timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || printf unknown)"
+
+message="event=$event host=$hostname_value id=$BOOTSY_BEACON_ID machine_id=$machine_id uptime=$uptime_value timestamp=$timestamp"
+
+systemd-cat -t bootsy-beacon -p info printf '%s\n' "$message" 2>/dev/null || true
+printf '<6>bootsy-beacon: %s\n' "$message" > /dev/kmsg 2>/dev/null || true
+
+if [ -n "$BOOTSY_BEACON_URL" ] && command -v curl >/dev/null 2>&1; then
+    curl -fsS -m "$BOOTSY_BEACON_TIMEOUT" -X POST \
+        -H 'content-type: text/plain' \
+        --data-binary "$message" \
+        "$BOOTSY_BEACON_URL" >/dev/null 2>&1 || true
+fi
+
+if [ -n "$BOOTSY_BEACON_UDP_HOST" ] && command -v nc >/dev/null 2>&1; then
+    printf '%s\n' "$message" | nc -u -w "$BOOTSY_BEACON_TIMEOUT" \
+        "$BOOTSY_BEACON_UDP_HOST" "$BOOTSY_BEACON_UDP_PORT" >/dev/null 2>&1 || true
+fi
+
+exit 0
