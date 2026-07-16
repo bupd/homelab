@@ -67,6 +67,7 @@ mkdir -p \
   "$root/usr/lib/rpi-boot" \
   "$root/usr/local/bin" \
   "$root/usr/local/sbin" \
+  "$root/var/lib/bootsy" \
   "$root/var/home/bupd" \
   "$root/var/lib" \
   "$root/var/log" \
@@ -100,6 +101,7 @@ cp -a "$firmware/share/raspberrypi/boot/." "$root/usr/lib/rpi-boot/"
 cp -a "$project_dir/rootfs_overlay/." "$root/"
 chmod 0755 \
   "$root/usr/local/sbin/rpi-bootc-sync" \
+  "$root/usr/local/sbin/bootsy-headless-apply" \
   "$root/usr/local/bin/bootsy-beacon" \
   "$root/usr/local/bin/bootsy-reverse-ssh"
 

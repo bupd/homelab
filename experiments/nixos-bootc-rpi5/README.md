@@ -22,6 +22,26 @@ NixOS flake
 The image includes `bootc`, `rpi-bootc-sync`, SSH, and a reverse SSH tunnel
 service for headless bring-up.
 
+## Headless Boot Partition
+
+The SD image uses a Raspberry Pi-style FAT `BOOT` partition for headless
+customisation. The workflow and image builder always create an empty `ssh`
+marker because SSH is required for this headless Pi.
+
+The first boot service also accepts these files on the FAT partition:
+
+- `ssh` or `ssh.txt`: marker that SSH should be available. OpenSSH is already
+  enabled in this image, so this is mainly a visible compatibility signal.
+- `userconf.txt` or `userconf`: one line in the Raspberry Pi format
+  `username:encrypted-password`. Generate the hash with `openssl passwd -6`.
+- `authorized_keys` or `authorized_keys.txt`: public keys to install for the
+  user from `userconf`.
+- `bootsy-debug.env`: reverse SSH and beacon configuration.
+- `bootsy-reverse-ssh.key`: private key used by the Pi to SSH back to the host.
+
+This mirrors the useful part of Raspberry Pi OS headless setup while keeping
+the OS payload as NixOS managed by bootc.
+
 ## Reverse SSH
 
 The reverse SSH service is enabled by default in this experiment. It waits for
@@ -64,6 +84,8 @@ provide the workflow inputs and repository secrets:
 - `BOOTSY_REVERSE_SSH_PRIVATE_KEY`: private key the Pi uses to SSH to the host.
 - `BOOTSY_PI_AUTHORIZED_KEYS`: public key allowed to SSH into the Pi through
   the tunnel.
+- `BOOTSY_PI_USERCONF`: optional `username:encrypted-password` line written to
+  `userconf.txt`.
 
 The workflow publishes the bootc image to GHCR and uploads a compressed SD card
 image artifact.

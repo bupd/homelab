@@ -147,6 +147,8 @@ fi
 RPI_BOOTC_EXTRA_CMDLINE="cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1" \
   "$sync_tool" --root "$root_mnt" --boot "$boot_mnt"
 
+touch "$boot_mnt/ssh"
+
 if [[ "${BOOTSY_REVERSE_SSH_ENABLE:-1}" == "1" || "${BOOTSY_REVERSE_SSH_ENABLE:-1}" == "true" ]]; then
   {
     printf 'BOOTSY_REVERSE_SSH_ENABLE=1\n'
@@ -170,6 +172,10 @@ fi
 
 if [[ -n "${BOOTSY_PI_AUTHORIZED_KEYS:-}" ]]; then
   printf '%s\n' "$BOOTSY_PI_AUTHORIZED_KEYS" > "$boot_mnt/authorized_keys"
+fi
+
+if [[ -n "${BOOTSY_PI_USERCONF:-}" ]]; then
+  printf '%s\n' "$BOOTSY_PI_USERCONF" > "$boot_mnt/userconf.txt"
 fi
 
 sync

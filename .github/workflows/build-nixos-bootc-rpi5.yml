@@ -56,6 +56,7 @@ env:
   BOOTSY_REVERSE_SSH_REMOTE_PORT: ${{ github.event.inputs.reverse_ssh_remote_port || secrets.BOOTSY_REVERSE_SSH_REMOTE_PORT || '2222' }}
   BOOTSY_REVERSE_SSH_PRIVATE_KEY: ${{ secrets.BOOTSY_REVERSE_SSH_PRIVATE_KEY }}
   BOOTSY_PI_AUTHORIZED_KEYS: ${{ secrets.BOOTSY_PI_AUTHORIZED_KEYS }}
+  BOOTSY_PI_USERCONF: ${{ secrets.BOOTSY_PI_USERCONF }}
 
 jobs:
   build:
@@ -138,7 +139,7 @@ jobs:
         working-directory: experiments/nixos-bootc-rpi5
         run: |
           set -o pipefail
-          sudo --preserve-env=IMAGE,TAG,BOOTSY_REVERSE_SSH_ENABLE,BOOTSY_REVERSE_SSH_HOST,BOOTSY_REVERSE_SSH_USER,BOOTSY_REVERSE_SSH_PORT,BOOTSY_REVERSE_SSH_REMOTE_BIND,BOOTSY_REVERSE_SSH_REMOTE_PORT,BOOTSY_REVERSE_SSH_PRIVATE_KEY,BOOTSY_PI_AUTHORIZED_KEYS \
+          sudo --preserve-env=IMAGE,TAG,BOOTSY_REVERSE_SSH_ENABLE,BOOTSY_REVERSE_SSH_HOST,BOOTSY_REVERSE_SSH_USER,BOOTSY_REVERSE_SSH_PORT,BOOTSY_REVERSE_SSH_REMOTE_BIND,BOOTSY_REVERSE_SSH_REMOTE_PORT,BOOTSY_REVERSE_SSH_PRIVATE_KEY,BOOTSY_PI_AUTHORIZED_KEYS,BOOTSY_PI_USERCONF \
             OUT=nixos-bootc-rpi5.img SIZE="${{ github.event.inputs.sdcard_size || '3900M' }}" \
             scripts/build-bootc-sdcard-image.sh 2>&1 | tee nixos-bootc-sdcard-build.log
           sudo zstd -T0 -19 nixos-bootc-rpi5.img -o nixos-bootc-rpi5.img.zst

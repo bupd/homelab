@@ -58,17 +58,9 @@
   };
 
   users.users = {
-    root.openssh.authorizedKeys.keyFiles = [
-      "/etc/ssh/authorized_keys.d/root"
-      "/boot/firmware/authorized_keys"
-    ];
     bupd = {
       isNormalUser = true;
       extraGroups = [ "wheel" ];
-      openssh.authorizedKeys.keyFiles = [
-        "/etc/ssh/authorized_keys.d/bupd"
-        "/boot/firmware/authorized_keys"
-      ];
     };
   };
 
@@ -78,13 +70,27 @@
     enable = true;
     openFirewall = true;
     settings = {
-      PasswordAuthentication = false;
+      PasswordAuthentication = true;
       KbdInteractiveAuthentication = false;
       PermitRootLogin = "prohibit-password";
+      AuthorizedKeysFile = ".ssh/authorized_keys /etc/ssh/authorized_keys.d/%u /boot/firmware/authorized_keys";
     };
   };
 
   systemd.network.wait-online.enable = false;
+
+  systemd.services.bootsy-headless-apply = {
+    description = "Apply Raspberry Pi bootfs headless SSH customisation";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "local-fs.target" ];
+    before = [ "sshd.service" "bootsy-reverse-ssh.service" "bootsy-beacon.service" ];
+    requiresMountsFor = [ "/boot/firmware" ];
+    path = [ pkgs.coreutils pkgs.gawk pkgs.gnugrep pkgs.gnused pkgs.shadow pkgs.systemd ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "/usr/local/sbin/bootsy-headless-apply";
+    };
+  };
 
   systemd.services.rpi-bootc-sync = {
     description = "Sync bootc BLS deployment into Raspberry Pi firmware boot partition";
@@ -155,6 +161,7 @@
     jq
     netcat-openbsd
     openssh
+    shadow
     podman
     ripgrep
     rsync

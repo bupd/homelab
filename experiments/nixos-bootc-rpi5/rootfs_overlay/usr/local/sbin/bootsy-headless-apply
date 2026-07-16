@@ -1,0 +1,75 @@
+#!/bin/sh
+set -eu
+
+boot="${BOOTSY_BOOTFS:-/boot/firmware}"
+
+log() {
+    systemd-cat -t bootsy-headless -p info printf '%s\n' "$*" 2>/dev/null || printf '%s\n' "$*" >&2
+}
+
+first_existing() {
+    for path in "$@"; do
+        if [ -e "$path" ]; then
+            printf '%s\n' "$path"
+            return 0
+        fi
+    done
+    return 1
+}
+
+valid_user() {
+    printf '%s\n' "$1" | grep -Eq '^[a-z][a-z0-9_-]{0,30}$'
+}
+
+apply_authorized_keys() {
+    user="$1"
+    keys="$2"
+
+    [ -r "$keys" ] || return 0
+
+    home="$(awk -F: -v user="$user" '$1 == user { print $6; exit }' /etc/passwd)"
+    [ -n "$home" ] || return 0
+
+    group="$(id -gn "$user")"
+    install -d -m 0700 -o "$user" -g "$group" "$home/.ssh"
+    install -m 0600 -o "$user" -g "$group" "$keys" "$home/.ssh/authorized_keys"
+    log "installed authorized_keys for $user from ${keys#$boot/}"
+}
+
+if [ ! -d "$boot" ]; then
+    log "bootfs is not mounted at $boot; skipping headless setup"
+    exit 0
+fi
+
+ssh_marker="$(first_existing "$boot/ssh" "$boot/ssh.txt" || true)"
+if [ -n "$ssh_marker" ]; then
+    log "SSH marker found at ${ssh_marker#$boot/}; OpenSSH is enabled in this image"
+fi
+
+userconf="$(first_existing "$boot/userconf.txt" "$boot/userconf" || true)"
+if [ -n "$userconf" ] && [ -r "$userconf" ]; then
+    line="$(sed -n '1p' "$userconf" | tr -d '\r')"
+    user="${line%%:*}"
+    password_hash="${line#*:}"
+
+    if [ "$user" = "$line" ] || [ -z "$user" ] || [ -z "$password_hash" ]; then
+        log "ignoring malformed ${userconf#$boot/}; expected username:encrypted-password"
+    elif ! valid_user "$user"; then
+        log "ignoring ${userconf#$boot/}; invalid username: $user"
+    else
+        if id "$user" >/dev/null 2>&1; then
+            usermod -p "$password_hash" "$user"
+            log "updated password hash for existing user $user from ${userconf#$boot/}"
+        else
+            useradd -m -G wheel -s /run/current-system/sw/bin/bash -p "$password_hash" "$user"
+            log "created headless admin user $user from ${userconf#$boot/}"
+        fi
+
+        keys="$(first_existing "$boot/authorized_keys" "$boot/authorized_keys.txt" || true)"
+        if [ -n "$keys" ]; then
+            apply_authorized_keys "$user" "$keys"
+        fi
+    fi
+fi
+
+exit 0

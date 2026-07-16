@@ -6,6 +6,7 @@ test -f "$tarball"
 
 tar -tf "$tarball" | grep -qx './sbin/init'
 tar -tf "$tarball" | grep -qx './usr/local/sbin/rpi-bootc-sync'
+tar -tf "$tarball" | grep -qx './usr/local/sbin/bootsy-headless-apply'
 tar -tf "$tarball" | grep -qx './usr/local/bin/bootsy-reverse-ssh'
 tar -tf "$tarball" | grep -qx './etc/bootsy/reverse-ssh.env'
 tar -tf "$tarball" | grep -q '^./usr/lib/modules/.*/vmlinuz$'
