@@ -13,6 +13,10 @@
 
   boot = {
     loader.grub.enable = false;
+    # Avoid compiling the Raspberry Pi vendor kernel in CI. The Pi firmware still
+    # owns firmware/config.txt/device-tree setup; bootc receives a cached
+    # aarch64 NixOS kernel from nixpkgs.
+    kernelPackages = lib.mkForce pkgs.linuxPackages_latest;
     kernelParams = [
       "console=tty1"
       "console=serial0,115200n8"

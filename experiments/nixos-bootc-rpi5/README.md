@@ -19,7 +19,7 @@ overlays, `config.txt`, and `cmdline.txt` at firmware-visible paths.
 
 ```text
 NixOS flake
-  -> NixOS aarch64 system closure + Pi 5 kernel/initramfs/firmware
+  -> NixOS aarch64 system closure + cached aarch64 kernel/initramfs + Pi firmware
   -> bootc-compatible OCI image
   -> bootc install to ext4 root partition
   -> rpi-bootc-sync generates FAT BOOT kernel/initramfs/config.txt/cmdline.txt
@@ -88,7 +88,10 @@ The local workstation is x86_64, so the real build path is GitHub Actions on
 The flake intentionally avoids unlocked `github:` inputs for the main NixOS
 channel because the GitHub commits API has been unreliable during these builds.
 `nixpkgs` comes from the NixOS channel tarball, and the Raspberry Pi module is
-fetched through Git.
+fetched through Git. The lock file pins the Raspberry Pi firmware/kernel source
+inputs, but this experiment forces the cached nixpkgs mainline aarch64 kernel
+for CI viability. The Raspberry Pi firmware, DTBs, overlays, `config.txt`, and
+boot partition layout are still provided through the Raspberry Pi path.
 
 Use the `Build NixOS bootc Raspberry Pi 5` workflow. For a debug SD image,
 provide the workflow inputs and repository secrets:
