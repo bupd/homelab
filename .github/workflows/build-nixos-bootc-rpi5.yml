@@ -66,8 +66,10 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v31
         with:
+          github_access_token: ${{ github.token }}
           extra_nix_config: |
             experimental-features = nix-command flakes
+            access-tokens = github.com=${{ github.token }}
             substituters = https://cache.nixos.org https://nix-community.cachix.org
             trusted-public-keys = nix-community.cachix.org-1:mB9FShGytQvO4Kbm9v71u6hrM7jDMb36pG8zX7rCUUs= cache.nixos.org-1:6NCHdD59X431o0gWfdf4dMRV8U7kNLL5A87L+QuxEFs=
 
@@ -79,7 +81,15 @@ jobs:
       - name: Build NixOS rootfs tarball
         working-directory: experiments/nixos-bootc-rpi5
         run: |
-          scripts/build-rootfs-tar.sh
+          for attempt in 1 2 3; do
+            if scripts/build-rootfs-tar.sh; then
+              break
+            fi
+            if [ "$attempt" = 3 ]; then
+              exit 1
+            fi
+            sleep "$((attempt * 20))"
+          done
           scripts/test-rpi-bootc-sync.sh
           scripts/test-rootfs-layout.sh build/nixos-bootc-rpi5-rootfs.tar
 
