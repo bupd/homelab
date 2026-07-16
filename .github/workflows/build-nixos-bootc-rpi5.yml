@@ -81,12 +81,15 @@ jobs:
 
       - name: Build NixOS rootfs tarball
         working-directory: experiments/nixos-bootc-rpi5
+        env:
+          NIX_RETRY_ATTEMPTS: "8"
+          NIX_RETRY_DELAY: "20"
         run: |
-          for attempt in 1 2 3; do
+          for attempt in 1 2 3 4 5; do
             if scripts/build-rootfs-tar.sh; then
               break
             fi
-            if [ "$attempt" = 3 ]; then
+            if [ "$attempt" = 5 ]; then
               exit 1
             fi
             sleep "$((attempt * 20))"

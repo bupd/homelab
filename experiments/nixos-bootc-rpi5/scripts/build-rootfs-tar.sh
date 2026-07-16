@@ -20,6 +20,26 @@ require_cmd mkdir
 require_cmd nix
 require_cmd tar
 
+nix_retry() {
+  local attempt
+  local max_attempts="${NIX_RETRY_ATTEMPTS:-8}"
+  local delay="${NIX_RETRY_DELAY:-20}"
+
+  for attempt in $(seq 1 "$max_attempts"); do
+    if nix "$@"; then
+      return 0
+    fi
+
+    if [ "$attempt" = "$max_attempts" ]; then
+      echo "nix $* failed after ${max_attempts} attempts" >&2
+      return 1
+    fi
+
+    echo "nix $* failed; retrying in ${delay}s (${attempt}/${max_attempts})" >&2
+    sleep "$delay"
+  done
+}
+
 tmp="$(mktemp -d)"
 cleanup() {
   rm -rf "$tmp"
@@ -30,17 +50,17 @@ root="$tmp/root"
 mkdir -p "$root"
 
 echo "==> building NixOS outputs"
-toplevel="$(nix build --no-link --print-out-paths "${flake_ref}.config.system.build.toplevel")"
-kernel="$(nix build --no-link --print-out-paths "${flake_ref}.config.system.build.kernel")"
-initrd="$(nix build --no-link --print-out-paths "${flake_ref}.config.system.build.initialRamdisk")"
-firmware="$(nix build --no-link --print-out-paths "${project_dir}#packages.aarch64-linux.rpiFirmware")"
+toplevel="$(nix_retry build --no-link --print-out-paths "${flake_ref}.config.system.build.toplevel")"
+kernel="$(nix_retry build --no-link --print-out-paths "${flake_ref}.config.system.build.kernel")"
+initrd="$(nix_retry build --no-link --print-out-paths "${flake_ref}.config.system.build.initialRamdisk")"
+firmware="$(nix_retry build --no-link --print-out-paths "${project_dir}#packages.aarch64-linux.rpiFirmware")"
 
-kernel_file="$(nix eval --raw "${flake_ref}.config.system.boot.loader.kernelFile")"
-initrd_file="$(nix eval --raw "${flake_ref}.config.system.boot.loader.initrdFile")"
-mod_dir_version="$(nix eval --raw "${flake_ref}.config.boot.kernelPackages.kernel.modDirVersion")"
+kernel_file="$(nix_retry eval --raw "${flake_ref}.config.system.boot.loader.kernelFile")"
+initrd_file="$(nix_retry eval --raw "${flake_ref}.config.system.boot.loader.initrdFile")"
+mod_dir_version="$(nix_retry eval --raw "${flake_ref}.config.boot.kernelPackages.kernel.modDirVersion")"
 
 echo "==> collecting closure"
-nix path-info -r "$toplevel" "$kernel" "$initrd" "$firmware" > "$tmp/store-paths"
+nix_retry path-info -r "$toplevel" "$kernel" "$initrd" "$firmware" > "$tmp/store-paths"
 mkdir -p "$root/nix/store"
 while IFS= read -r store_path; do
   cp -a --reflink=auto "$store_path" "$root/nix/store/"
