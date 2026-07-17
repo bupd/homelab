@@ -47,7 +47,6 @@ permissions:
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/nixos-bootc-rpi5
   TAG: ${{ github.event.inputs.tag || github.sha }}
-  BOOTC_BIN_IMAGE: ghcr.io/bupd/homelab/bootc-bin-alpine-arm64:latest
   BOOTSY_REVERSE_SSH_ENABLE: "1"
   BOOTSY_REVERSE_SSH_HOST: ${{ github.event.inputs.reverse_ssh_host || secrets.BOOTSY_REVERSE_SSH_HOST }}
   BOOTSY_REVERSE_SSH_USER: ${{ github.event.inputs.reverse_ssh_user || secrets.BOOTSY_REVERSE_SSH_USER || 'bupd' }}
@@ -109,7 +108,6 @@ jobs:
           sudo podman build \
             --platform linux/arm64 \
             --build-arg ROOTFS_TAR=build/nixos-bootc-rpi5-rootfs.tar \
-            --build-arg BOOTC_BIN_IMAGE="${BOOTC_BIN_IMAGE}" \
             --label containers.bootc=1 \
             --label ostree.bootable=1 \
             --label ostree.linux=rpi \

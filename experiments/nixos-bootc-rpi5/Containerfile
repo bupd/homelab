@@ -1,21 +1,17 @@
 ARG ROOTFS_TAR=build/nixos-bootc-rpi5-rootfs.tar
-ARG BOOTC_BIN_IMAGE=ghcr.io/bupd/homelab/bootc-bin-alpine-arm64:latest
 
 FROM scratch AS rootfs
 ARG ROOTFS_TAR
 ADD ${ROOTFS_TAR} /
 
-FROM --platform=$TARGETPLATFORM ${BOOTC_BIN_IMAGE} AS bootc-bin
-
 FROM scratch
 COPY --from=rootfs / /
-COPY --from=bootc-bin /lib /lib
-COPY --from=bootc-bin /usr/bin/bootc /usr/bin/bootc
-COPY --from=bootc-bin /usr/lib /usr/lib
 
 LABEL containers.bootc=1
 LABEL ostree.bootable=1
 LABEL org.opencontainers.image.title="nixos-bootc-rpi5"
 LABEL org.opencontainers.image.description="Experimental NixOS bootc image for Raspberry Pi 5"
+
+ENV PATH="/run/current-system/sw/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 CMD ["/sbin/init"]

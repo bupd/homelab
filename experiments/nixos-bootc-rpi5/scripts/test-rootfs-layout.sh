@@ -10,6 +10,7 @@ trap 'rm -f "$tmp"' EXIT
 tar -tf "$tarball" > "$tmp"
 
 grep -qx './sbin/init' "$tmp"
+grep -qx './usr/bin/bootc' "$tmp"
 grep -qx './usr/local/sbin/rpi-bootc-sync' "$tmp"
 grep -qx './usr/local/sbin/bootsy-headless-apply' "$tmp"
 grep -qx './usr/local/bin/bootsy-reverse-ssh' "$tmp"

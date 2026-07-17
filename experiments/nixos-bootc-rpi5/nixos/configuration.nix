@@ -171,6 +171,7 @@
   environment.defaultPackages = lib.mkForce [];
 
   environment.systemPackages = with pkgs; [
+    bootc
     curl
     netcat-openbsd
     openssh
