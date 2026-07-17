@@ -1,13 +1,21 @@
 # instance1 K3s host
 
-`archbtw` is the authoritative K3s server for the `ins1` cluster. It uses the
-single-server datastore created by the standard K3s installation and is not an
-application worker. The files in this directory mirror host configuration
-installed under `/etc`.
+`archbtw` is the authoritative K3s server for the `ins1` cluster.
 
-The control-plane node has a persistent `NoSchedule` taint. Application
-capacity is supplied by agent-only worker nodes that join
-`https://192.168.0.4:6443`.
+Simple model:
+
+- This host controls the cluster.
+- This host has no K3s agent.
+- This host runs no Pods.
+- `media-worker` runs every Pod.
+- `kubectl get nodes` does not show `archbtw`. That is correct.
+
+`config.yaml` is copied to `/etc/rancher/k3s/config.yaml` by the worker
+reconcile script. It enables `disable-agent` and the cluster egress tunnel.
+
+The retained `NoSchedule` taint is a safety belt if the embedded agent is ever
+enabled accidentally. Normal scheduling protection comes from having no
+kubelet or container runtime on the control plane at all.
 
 Cluster objects, infrastructure add-ons, and applications are declared under
 `clusters/ins1` and will be reconciled by Flux. Host-level K3s configuration

@@ -1,0 +1,41 @@
+[Unit]
+Description=K3s media-worker agent
+Documentation=https://docs.k3s.io/
+Wants=network-online.target
+After=network-online.target k3s.service
+Requires=k3s.service
+
+[Container]
+Image=docker.io/rancher/k3s:v1.36.2-k3s1
+Pull=never
+ContainerName=media-worker
+HostName=media-worker
+
+Network=media-worker.network
+IP=10.89.0.2
+
+# K3s runs its own containerd and CNI inside this system container. NVIDIA CDI
+# gives the worker container the physical GPU; the in-cluster GPU operator is
+# responsible for exposing it to application Pods.
+PodmanArgs=--privileged --device=nvidia.com/gpu=all --security-opt=label=disable
+
+Volume=/etc/rancher/k3s-media-worker/config.yaml:/etc/rancher/k3s/config.yaml:ro
+Volume=/etc/rancher/k3s-media-worker/token:/run/secrets/k3s-agent-token:ro
+Volume=/etc/rancher/k3s-media-worker/node:/etc/rancher/node
+Volume=/var/lib/rancher/k3s-media-worker:/var/lib/rancher/k3s
+Volume=/var/lib/rancher/k3s-media-worker-kubelet:/var/lib/kubelet:rshared
+Volume=/var/lib/rancher/k3s-media-worker-cni:/var/lib/cni
+Volume=/var/log/k3s-media-worker:/var/log
+Volume=/home/bupd/hdd/data:/home/bupd/hdd/data:rw
+Volume=/lib/modules:/lib/modules:ro
+Volume=/etc/cdi:/etc/cdi:ro
+
+Exec=agent
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target
