@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Node
+metadata:
+  name: archbtw
+  labels:
+    homelab.bupd.dev/node-class: control-plane
+    homelab.bupd.dev/workloads: disabled
+spec:
+  taints:
+    - key: node-role.kubernetes.io/control-plane
+      value: "true"
+      effect: NoSchedule
