@@ -89,9 +89,9 @@ The flake intentionally avoids unlocked `github:` inputs for the main NixOS
 channel because the GitHub commits API has been unreliable during these builds.
 `nixpkgs` comes from the NixOS channel tarball, and the Raspberry Pi module is
 fetched through Git. The lock file pins the Raspberry Pi firmware/kernel source
-inputs, but this experiment forces the cached nixpkgs mainline aarch64 kernel
-for CI viability. The Raspberry Pi firmware, DTBs, overlays, `config.txt`, and
-boot partition layout are still provided through the Raspberry Pi path.
+inputs. The image uses the Raspberry Pi kernel selected by `raspberry-pi-nix`
+instead of a generic NixOS aarch64 kernel because Pi 5 Ethernet, SD, RP1, DTB,
+and firmware behaviour must line up for headless reverse SSH bring-up.
 
 Use the `Build NixOS bootc Raspberry Pi 5` workflow. For a debug SD image,
 provide the workflow inputs and repository secrets:
