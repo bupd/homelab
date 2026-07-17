@@ -118,7 +118,7 @@ sudo podman build --platform linux/arm64 \
   --build-arg ROOTFS_TAR=build/out/nixos-bootc-rpi5-rootfs.tar \
   -t localhost/nixos-bootc-rpi5:local .
 sudo IMAGE=localhost/nixos-bootc-rpi5 TAG=local \
-  OUT=build/out/nixos-bootc-rpi5.img SIZE=8G \
+  OUT=build/out/nixos-bootc-rpi5.img SIZE=16G \
   scripts/build-bootc-sdcard-image.sh
 ```
 

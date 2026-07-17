@@ -11,7 +11,7 @@ if [[ -z "$source_imgref" ]]; then
 fi
 source_oci_dir="${BOOTC_SOURCE_OCI_DIR:-}"
 out="${OUT:-nixos-bootc-rpi5.img}"
-size="${SIZE:-3900M}"
+size="${SIZE:-16G}"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {

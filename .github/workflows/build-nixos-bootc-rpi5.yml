@@ -9,7 +9,7 @@ on:
         required: true
       sdcard_size:
         description: "Raw SD card image size"
-        default: 3900M
+        default: 16G
         required: true
       reverse_ssh_host:
         description: "Host for the Pi to SSH back to"
@@ -146,7 +146,7 @@ jobs:
             BOOTC_SOURCE_OCI_DIR="$PWD/build/out/nixos-bootc-rpi5-oci" \
             TARGET_IMGREF="${IMAGE}:${TAG}" \
             BOOTC_TARGET_TRANSPORT=registry \
-            OUT=nixos-bootc-rpi5.img SIZE="${{ github.event.inputs.sdcard_size || '3900M' }}" \
+            OUT=nixos-bootc-rpi5.img SIZE="${{ github.event.inputs.sdcard_size || '16G' }}" \
             scripts/build-bootc-sdcard-image.sh 2>&1 | tee nixos-bootc-sdcard-build.log
           sudo zstd -T0 -19 nixos-bootc-rpi5.img -o nixos-bootc-rpi5.img.zst
           sudo chown "$USER:$USER" nixos-bootc-rpi5.img.zst nixos-bootc-sdcard-build.log
