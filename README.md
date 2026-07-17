@@ -9,10 +9,15 @@ model.
 The `ins1` cluster has one intentionally authoritative control plane and any
 number of agent-only workers.
 
+See [Homelab architecture and rollout plan](docs/architecture-plan.md) for the
+target-system diagram, workload placement, service data flows, phased rollout,
+exit gates, and production-readiness criteria.
+
 | Node | LAN address | Tailnet address | K3s role | Workload policy |
 | --- | --- | --- | --- | --- |
 | `archbtw` | `192.168.0.4` | `100.81.118.34` | Server/control plane | `NoSchedule` |
-| Future nodes | Assigned per host | Assigned by Tailscale | Agent/worker | Application workloads |
+| Future `archbtw` workers | Assigned per node | Assigned by Tailscale | Agent/worker | Heavy media and storage workloads |
+| Future Raspberry Pi nodes | Assigned per host | Assigned by Tailscale | Agent/worker | Lightweight edge workloads |
 
 The control plane is deliberately not highly available. Losing `archbtw`
 makes the Kubernetes API unavailable until that machine is restored, while
