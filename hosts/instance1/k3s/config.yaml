@@ -5,8 +5,10 @@ advertise-address: 192.168.0.4
 
 tls-san:
   - 192.168.0.4
+  - 100.81.118.34
   - ARCHBTW
   - archbtw
+  - archbtw.tail6c5ea9.ts.net
 
 # Application workloads run on agent nodes, never on the control plane.
 node-taint:
@@ -15,5 +17,11 @@ node-taint:
 node-label:
   - homelab.bupd.dev/node-class=control-plane
   - homelab.bupd.dev/workloads=disabled
+
+# Tailnet ingress is provided by the Flux-managed Tailscale Operator. Do not
+# bind the packaged LAN load balancer or ingress controller on this node.
+disable:
+  - servicelb
+  - traefik
 
 write-kubeconfig-mode: "0600"
