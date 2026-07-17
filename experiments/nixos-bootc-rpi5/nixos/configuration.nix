@@ -53,8 +53,11 @@
 
   networking = {
     hostName = "nixos-bootc-rpi5";
-    useDHCP = false;
-    interfaces.eth0.useDHCP = true;
+    # Raspberry Pi 5 onboard Ethernet is commonly named end0 with predictable
+    # interface names, while some kernels/configs still expose eth0. Let dhcpcd
+    # claim whichever Ethernet interface appears so headless reverse SSH is not
+    # blocked by a naming mismatch.
+    useDHCP = true;
   };
 
   users.users = {
