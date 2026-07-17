@@ -42,8 +42,8 @@ exec podman run --rm \
   -e NIX_RETRY_ATTEMPTS="${NIX_RETRY_ATTEMPTS:-3}" \
   -e NIX_RETRY_DELAY="${NIX_RETRY_DELAY:-10}" \
   -e 'NIX_CONFIG=experimental-features = nix-command flakes
-substituters = https://cache.nixos.org https://nix-community.cachix.org
-trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWfdf4dMRV8U7kNLL5A87L+QuxEFs= nix-community.cachix.org-1:mB9FShGytQvO4Kbm9v71u6hrM7jDMb36pG8zX7rCUUs=
+substituters = https://cache.nixos.org https://nix-community.cachix.org https://raspberry-pi-nix.cachix.org
+trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWfdf4dMRV8U7kNLL5A87L+QuxEFs= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= raspberry-pi-nix.cachix.org-1:WmV2rdSangxW0rZjY/tBvBDSaNFQ3DyEQsVw8EvHn9o=
 extra-platforms = aarch64-linux
 sandbox = false
 filter-syscalls = false

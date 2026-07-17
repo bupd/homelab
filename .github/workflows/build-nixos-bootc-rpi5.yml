@@ -70,8 +70,8 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
             access-tokens = github.com=${{ github.token }}
-            substituters = https://cache.nixos.org https://nix-community.cachix.org
-            trusted-public-keys = nix-community.cachix.org-1:mB9FShGytQvO4Kbm9v71u6hrM7jDMb36pG8zX7rCUUs= cache.nixos.org-1:6NCHdD59X431o0gWfdf4dMRV8U7kNLL5A87L+QuxEFs=
+            substituters = https://cache.nixos.org https://nix-community.cachix.org https://raspberry-pi-nix.cachix.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWfdf4dMRV8U7kNLL5A87L+QuxEFs= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= raspberry-pi-nix.cachix.org-1:WmV2rdSangxW0rZjY/tBvBDSaNFQ3DyEQsVw8EvHn9o=
 
       - name: Install image tools
         run: |
