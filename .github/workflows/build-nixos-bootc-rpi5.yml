@@ -76,7 +76,20 @@ jobs:
       - name: Install image tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y dosfstools podman zstd
+          sudo apt-get install -y \
+            cargo \
+            dosfstools \
+            e2fsprogs \
+            jq \
+            libglib2.0-dev \
+            libostree-dev \
+            libssl-dev \
+            ostree \
+            parted \
+            pkg-config \
+            podman \
+            skopeo \
+            zstd
 
       - name: Build NixOS rootfs tarball
         working-directory: experiments/nixos-bootc-rpi5
@@ -101,28 +114,16 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build bootc image
+      - name: Build OSTree bootc image
         working-directory: experiments/nixos-bootc-rpi5
         run: |
-          created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          sudo podman build \
-            --platform linux/arm64 \
-            --build-arg ROOTFS_TAR=build/nixos-bootc-rpi5-rootfs.tar \
-            --label containers.bootc=1 \
-            --label ostree.bootable=1 \
-            --label ostree.linux=rpi \
-            --label "org.opencontainers.image.created=${created}" \
-            --label org.opencontainers.image.description="Experimental NixOS bootc image for Raspberry Pi 5" \
-            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
-            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}/tree/${GITHUB_SHA}/experiments/nixos-bootc-rpi5" \
-            --label org.opencontainers.image.title=nixos-bootc-rpi5 \
-            --label "org.opencontainers.image.url=https://github.com/${GITHUB_REPOSITORY}" \
-            --label "org.opencontainers.image.vendor=${GITHUB_REPOSITORY_OWNER}" \
-            --label "org.opencontainers.image.version=${TAG}" \
-            -t "${IMAGE}:${TAG}" \
-            -t "${IMAGE}:latest" \
-            -f Containerfile \
-            .
+          sudo --preserve-env=IMAGE,TAG \
+            ROOTFS_TAR=build/nixos-bootc-rpi5-rootfs.tar \
+            OCI_DIR="$PWD/build/out/nixos-bootc-rpi5-oci" \
+            TARGET_IMGREF="${IMAGE}:${TAG}" \
+            BOOTC_LOAD_CONTAINERS_STORAGE=1 \
+            scripts/build-bootc-oci.sh
+          sudo podman tag "${IMAGE}:${TAG}" "${IMAGE}:latest"
 
       - name: Smoke bootc tooling
         run: |
@@ -141,6 +142,10 @@ jobs:
         run: |
           set -o pipefail
           sudo --preserve-env=IMAGE,TAG,BOOTSY_REVERSE_SSH_ENABLE,BOOTSY_REVERSE_SSH_HOST,BOOTSY_REVERSE_SSH_USER,BOOTSY_REVERSE_SSH_PORT,BOOTSY_REVERSE_SSH_REMOTE_BIND,BOOTSY_REVERSE_SSH_REMOTE_PORT,BOOTSY_REVERSE_SSH_PRIVATE_KEY,BOOTSY_PI_AUTHORIZED_KEYS,BOOTSY_PI_USERCONF \
+            BOOTC_SOURCE_IMGREF="oci:/source-oci:${TAG}" \
+            BOOTC_SOURCE_OCI_DIR="$PWD/build/out/nixos-bootc-rpi5-oci" \
+            TARGET_IMGREF="${IMAGE}:${TAG}" \
+            BOOTC_TARGET_TRANSPORT=registry \
             OUT=nixos-bootc-rpi5.img SIZE="${{ github.event.inputs.sdcard_size || '3900M' }}" \
             scripts/build-bootc-sdcard-image.sh 2>&1 | tee nixos-bootc-sdcard-build.log
           sudo zstd -T0 -19 nixos-bootc-rpi5.img -o nixos-bootc-rpi5.img.zst
