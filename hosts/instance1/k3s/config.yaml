@@ -1,0 +1,19 @@
+# K3s server configuration for the authoritative ins1 control plane.
+node-name: archbtw
+node-ip: 192.168.0.4
+advertise-address: 192.168.0.4
+
+tls-san:
+  - 192.168.0.4
+  - ARCHBTW
+  - archbtw
+
+# Application workloads run on agent nodes, never on the control plane.
+node-taint:
+  - node-role.kubernetes.io/control-plane=true:NoSchedule
+
+node-label:
+  - homelab.bupd.dev/node-class=control-plane
+  - homelab.bupd.dev/workloads=disabled
+
+write-kubeconfig-mode: "0600"
