@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Node
+metadata:
+  name: media-worker
+  labels:
+    homelab.bupd.dev/node-class: worker
+    homelab.bupd.dev/workload-pool: media
+    homelab.bupd.dev/storage: media
+    homelab.bupd.dev/accelerator: nvidia
