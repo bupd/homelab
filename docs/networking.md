@@ -114,10 +114,9 @@ allowed.
 
 1. Log `archbtw` back into its intended tailnet and confirm that it receives
    `100.81.118.34` and `archbtw.tail6c5ea9.ts.net`.
-2. Install the declared K3s host configuration and restart K3s so the API
-   certificate includes the tailnet identities and packaged public-facing
-   ingress components are disabled.
-3. Join at least one schedulable worker.
+2. Run the declared `media-worker` host reconciler. It joins the worker first,
+   then makes the control plane agentless and restarts both sides safely.
+3. Confirm that `media-worker` is the only Ready Kubernetes Node.
 4. Bootstrap Flux.
 5. Install the Tailscale Kubernetes Operator through a pinned Helm release and
    a SOPS-encrypted OAuth Secret.

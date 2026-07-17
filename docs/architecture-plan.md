@@ -237,16 +237,17 @@ so Flux can order controllers, infrastructure configuration, and applications.
 ### Phase 0 — Protect the foundation
 
 1. Confirm the HDD UUID mount and directory ownership after a reboot.
-2. Install the checked-in K3s server configuration on `archbtw` and verify the
-   control-plane taint, API SANs, and disabled packaged ingress components.
+2. Run the checked-in `media-worker` reconciler. It joins the worker before it
+   makes `archbtw` agentless.
 3. Back up the K3s datastore/token and document restore commands.
 
 Exit gate: `archbtw` is reachable over LAN and tailnet, the API certificate is
-valid for its declared names, and no ordinary Pod can schedule there.
+valid for its declared names, and it has no kubelet, container runtime, CNI,
+or Kubernetes Node object.
 
 ### Phase 1 — Add workload capacity
 
-1. Create and join the separate `archbtw` worker node or nodes.
+1. Confirm that the containerized `media-worker` is the only Ready Node.
 2. Attach/mount the HDD and fast application-state filesystem to the intended
    media worker.
 3. Add declarative labels, placement rules, and resource reservations.

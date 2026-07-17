@@ -15,8 +15,8 @@ exit gates, and production-readiness criteria.
 
 | Node | LAN address | Tailnet address | K3s role | Workload policy |
 | --- | --- | --- | --- | --- |
-| `archbtw` | `192.168.0.4` | `100.81.118.34` | Server/control plane | `NoSchedule` |
-| Future `archbtw` workers | Assigned per node | Assigned by Tailscale | Agent/worker | Heavy media and storage workloads |
+| `archbtw` | `192.168.0.4` | `100.81.118.34` | Agentless server/control plane | Cannot run Pods |
+| `media-worker` | `10.89.0.2` | None | Containerized agent/worker | Media, storage, and GPU workloads |
 | Future Raspberry Pi nodes | Assigned per host | Assigned by Tailscale | Agent/worker | Lightweight edge workloads |
 
 The control plane is deliberately not highly available. Losing `archbtw`
@@ -32,6 +32,7 @@ clusters/
 hosts/
   instance1/
     k3s/                   # Host bootstrap configuration installed under /etc
+    k3s-agents/            # Isolated worker definitions and reconcilers
 experiments/               # Raspberry Pi and bootc experiments
 docs/                       # Architecture and operational documentation
 ```
@@ -52,8 +53,8 @@ Host configuration and cluster configuration are intentionally separate:
 - CoreDNS, metrics-server, local-path-provisioner, Traefik, and ServiceLB are
   currently provided by the default K3s installation. Traefik and ServiceLB
   are transitional and are disabled in the declared host configuration.
-- The control-plane Node policy is declared in
-  `clusters/ins1/nodes/archbtw/node-policy.yaml`.
+- The desired host state declares `archbtw` agentless and `media-worker` as
+  the only Kubernetes Node.
 - Flux bootstrap and application releases have not been added yet.
 - Tailscale is installed but must be logged back into the tailnet before its
   declared address and MagicDNS name are reachable.
@@ -79,6 +80,18 @@ application identity. Every user-facing service must have a dedicated
 Tailscale MagicDNS name, and the application must be configured with that exact
 HTTPS URL as its external/base URL.
 
+## Reconcile the host first
+
+The host reconciler joins `media-worker`, waits for it to become ready, and
+only then removes the embedded agent from `archbtw`:
+
+```bash
+sudo hosts/instance1/k3s-agents/media-worker/reconcile.sh
+```
+
+Do this before applying `clusters/ins1`; applying a Node policy before its
+agent joins would create a phantom Node.
+
 ## Apply the current cluster configuration
 
 Select the cluster kubeconfig:
@@ -100,11 +113,11 @@ Apply them using server-side ownership compatible with Flux:
 kubectl apply --server-side -k clusters/ins1
 ```
 
-Verify the control-plane scheduling policy:
+Verify that the worker is the only Kubernetes Node:
 
 ```bash
-kubectl get node archbtw \
-  -o custom-columns='NAME:.metadata.name,LABELS:.metadata.labels,TAINTS:.spec.taints'
+kubectl get nodes -o wide
+kubectl get pods -A --field-selector spec.nodeName=archbtw
 ```
 
 ## Adding workers
@@ -133,11 +146,9 @@ secrets.
 - Host-backed volumes require explicit node affinity because their contents do
   not follow a Pod to another worker.
 
-The media HDD is currently attached to `archbtw`, but application Pods are
-excluded from that node. Workers therefore cannot use the HDD through a direct
-`hostPath`. Before Immich is deployed, the storage must either be exported to
-workers, attached to a storage-capable worker, or exposed through an
-appropriate persistent-volume provisioner.
+The media HDD is physically attached to `archbtw`. The `media-worker` system
+container receives `/home/bupd/hdd/data` at the same absolute path, so a Pod
+with hard affinity to `media-worker` can use a reviewed local `hostPath` there.
 
 ## Planned services
 
