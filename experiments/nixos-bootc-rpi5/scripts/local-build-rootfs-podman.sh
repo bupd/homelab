@@ -29,7 +29,7 @@ require_cmd mkdir
 require_cmd podman
 
 mkdir -p "$(dirname "$out")" "$(dirname "$log")" "${project_dir}/build/tmp"
-podman volume create "$volume" >/dev/null
+podman volume exists "$volume" >/dev/null 2>&1 || podman volume create "$volume" >/dev/null
 
 exec podman run --rm \
   --platform linux/arm64 \
@@ -47,6 +47,7 @@ trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWfdf4dMRV8U7kNLL5A87L+Qux
 extra-platforms = aarch64-linux
 sandbox = false
 filter-syscalls = false
+require-sigs = false
 max-jobs = auto' \
   nixos/nix:latest \
   sh -lc 'scripts/build-rootfs-tar.sh 2>&1 | tee build/local-rootfs-build.log'

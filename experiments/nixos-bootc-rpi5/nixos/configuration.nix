@@ -25,12 +25,8 @@
       "systemd.log_level=debug"
     ];
     initrd.availableKernelModules = [
-      "bcmgenet"
-      "pcie_brcmstb"
-      "reset-raspberrypi"
-      "sd_mod"
-      "usb_storage"
-      "usbhid"
+      "genet"
+      "pcie-brcmstb"
     ];
   };
 
@@ -69,6 +65,18 @@
   };
 
   security.sudo.wheelNeedsPassword = false;
+
+  nix.enable = false;
+
+  documentation = {
+    enable = false;
+    doc.enable = false;
+    info.enable = false;
+    man.enable = false;
+    nixos.enable = false;
+  };
+
+  programs.command-not-found.enable = false;
 
   services.openssh = {
     enable = true;
@@ -160,22 +168,16 @@
     };
   };
 
+  environment.defaultPackages = lib.mkForce [];
+
   environment.systemPackages = with pkgs; [
     curl
-    git
-    htop
-    jq
     netcat-openbsd
     openssh
     shadow
-    podman
-    ripgrep
-    rsync
-    tmux
-    vim
   ];
 
-  virtualisation.podman.enable = true;
+  virtualisation.podman.enable = false;
 
   environment.etc."bootc/kargs.d/10-rpi5.toml".text = ''
     kargs = ["console=tty1", "console=serial0,115200n8", "ip=dhcp", "boot.shell_on_fail"]
