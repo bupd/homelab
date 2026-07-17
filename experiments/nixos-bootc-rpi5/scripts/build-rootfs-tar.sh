@@ -80,6 +80,7 @@ mkdir -p \
   "$root/sys" \
   "$root/sysroot" \
   "$root/tmp" \
+  "$root/usr/etc" \
   "$root/usr/bin" \
   "$root/usr/lib/bootc/kargs.d" \
   "$root/usr/lib/modules/${mod_dir_version}" \
@@ -101,6 +102,7 @@ chmod 0755 "$root/tmp" "$root/var/tmp"
 chmod 0700 "$root/var/roothome"
 
 cp -a "$toplevel/etc/." "$root/etc/"
+cp -a "$root/etc/." "$root/usr/etc/"
 ln -sfn "$toplevel" "$root/run/current-system"
 ln -sfn "$toplevel" "$root/nix/var/nix/profiles/system"
 ln -sfn "$toplevel" "$root/nix/var/nix/profiles/system-1-link"
@@ -124,7 +126,8 @@ chmod 0755 \
   "$root/usr/local/sbin/rpi-bootc-sync" \
   "$root/usr/local/sbin/bootsy-headless-apply" \
   "$root/usr/local/bin/bootsy-beacon" \
-  "$root/usr/local/bin/bootsy-reverse-ssh"
+  "$root/usr/local/bin/bootsy-reverse-ssh" \
+  "$root/usr/local/bin/bootupctl"
 
 cat > "$root/usr/lib/ostree/prepare-root.conf" <<'EOF'
 [composefs]

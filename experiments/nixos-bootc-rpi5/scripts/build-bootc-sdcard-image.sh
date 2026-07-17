@@ -4,6 +4,12 @@ set -euo pipefail
 image="${IMAGE:-ghcr.io/bupd/homelab/nixos-bootc-rpi5}"
 tag="${TAG:-latest}"
 target_imgref="${TARGET_IMGREF:-${image}:${tag}}"
+target_transport="${BOOTC_TARGET_TRANSPORT:-registry}"
+source_imgref="${BOOTC_SOURCE_IMGREF:-}"
+if [[ -z "$source_imgref" ]]; then
+  source_imgref="containers-storage:${target_imgref}"
+fi
+source_oci_dir="${BOOTC_SOURCE_OCI_DIR:-}"
 out="${OUT:-nixos-bootc-rpi5.img}"
 size="${SIZE:-3900M}"
 
@@ -68,6 +74,7 @@ mkfs.ext4 -F -L NIXOS_BOOTC "$root_part"
 root_uuid="$(blkid -s UUID -o value "$root_part")"
 
 mount "$root_part" "$root_mnt"
+mkdir -p "$root_mnt/boot"
 
 majmin() {
   lsblk -nro MAJ:MIN "$1" | head -n 1
@@ -79,6 +86,14 @@ root_majmin="$(majmin "$root_part")"
 udev_mount=()
 if [[ -d /run/udev ]]; then
   udev_mount=(-v /run/udev:/run/udev:ro)
+fi
+containers_runroot_mount=()
+if [[ -d /run/containers/storage ]]; then
+  containers_runroot_mount=(-v /run/containers/storage:/run/containers/storage)
+fi
+source_oci_mount=()
+if [[ -n "$source_oci_dir" ]]; then
+  source_oci_mount=(-v "$source_oci_dir:/source-oci:ro")
 fi
 
 podman run --rm --privileged --pid=host \
@@ -97,12 +112,16 @@ podman run --rm --privileged --pid=host \
   -e ROOT_MINOR="${root_majmin#*:}" \
   -e ROOT_UUID="$root_uuid" \
   -e TARGET_IMGREF="$target_imgref" \
+  -e BOOTC_TARGET_TRANSPORT="$target_transport" \
+  -e BOOTC_SOURCE_IMGREF="$source_imgref" \
   -e RUST_BACKTRACE=1 \
   -e RUST_LOG="${RUST_LOG:-debug}" \
   -v /dev:/dev \
   -v /sys:/sys:ro \
   "${udev_mount[@]}" \
   -v /var/lib/containers:/var/lib/containers \
+  "${containers_runroot_mount[@]}" \
+  "${source_oci_mount[@]}" \
   -v "$root_mnt:/target" \
   "${image}:${tag}" \
   /bin/sh -euxc '
@@ -119,11 +138,13 @@ podman run --rm --privileged --pid=host \
     ensure_block_node "$LOOPDEV" "$LOOP_MAJOR" "$LOOP_MINOR"
     ensure_block_node "$BOOT_PART" "$BOOT_MAJOR" "$BOOT_MINOR"
     ensure_block_node "$ROOT_PART" "$ROOT_MAJOR" "$ROOT_MINOR"
+    export PATH="/usr/local/sbin:/usr/local/bin:$PATH"
     bootc --version
 
     bootc install to-filesystem \
-      --bootloader none \
+      --source-imgref "$BOOTC_SOURCE_IMGREF" \
       --root-mount-spec "UUID=$ROOT_UUID" \
+      --target-transport "$BOOTC_TARGET_TRANSPORT" \
       --target-imgref "$TARGET_IMGREF" \
       --skip-fetch-check \
       /target

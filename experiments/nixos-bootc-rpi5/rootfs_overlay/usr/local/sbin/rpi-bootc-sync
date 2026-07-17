@@ -88,13 +88,13 @@ root="$(trim_slash "$root")"
 boot="$(trim_slash "$boot")"
 
 find_latest_bls() {
-    find "$root/boot" -path '*/loader/entries/*.conf' -type f 2>/dev/null | sort | tail -n 1
+    find "$root/boot" -path '*/loader*/entries/*.conf' -type f 2>/dev/null | sort | tail -n 1
 }
 
 if [ -z "$entry" ]; then
     entry="$(find_latest_bls || true)"
 fi
-[ -n "$entry" ] || die "no BLS entry found under $root/boot/loader/entries"
+[ -n "$entry" ] || die "no BLS entry found under $root/boot/loader*/entries"
 [ -f "$entry" ] || die "BLS entry not found: $entry"
 
 bls_value() {

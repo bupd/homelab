@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+set -eu
+
+echo "bootupctl shim: Raspberry Pi firmware boot is handled by rpi-bootc-sync; skipping $*" >&2
+exit 0

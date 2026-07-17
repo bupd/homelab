@@ -175,7 +175,10 @@
     curl
     netcat-openbsd
     openssh
+    ostree
+    podman
     shadow
+    skopeo
   ];
 
   virtualisation.podman.enable = false;
@@ -184,4 +187,13 @@
     kargs = ["console=tty1", "console=serial0,115200n8", "ip=dhcp", "boot.shell_on_fail"]
     match-architectures = ["aarch64"]
   '';
+
+  environment.etc."containers/policy.json".text = builtins.toJSON {
+    default = [
+      {
+        type = "insecureAcceptAnything";
+      }
+    ];
+    transports = { };
+  };
 }
