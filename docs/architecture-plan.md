@@ -5,8 +5,7 @@
 Build `homelab` as a private, declarative media and personal-services cluster. The
 physical `archbtw` machine remains the authoritative K3s control plane and also
 hosts separately registered worker nodes for the storage- and compute-heavy
-media stack. Raspberry Pi workers provide lightweight network, security, and
-automation capacity.
+media stack.
 
 Kubernetes objects are reconciled by Flux. Applications and infrastructure
 add-ons are installed with pinned Helm releases. Host bootstrap remains under
@@ -41,15 +40,9 @@ flowchart TB
         fast["Linux filesystem<br/>/opt/* and databases"]
     end
 
-    subgraph edge["Raspberry Pi 5 workers"]
-        pi1["Network / proxy<br/>lightweight services"]
-        pi2["Automation / security<br/>hardware-backed operations"]
-    end
-
     oci["GHCR OCI artifact"] -->|"desired state"| flux
     flux -->|"Kustomize + Helm via API"| cp
     cp -.->|"schedules"| workers
-    cp -.->|"schedules lightweight work"| edge
 
     user --> ts --> ingress
     ingress --> photos
@@ -80,11 +73,10 @@ host-bootstrap concern and is deliberately left open until those nodes exist.
 | --- | --- | --- |
 | `archbtw` K3s server | API server, datastore, built-in control-plane components | Permanent `NoSchedule` control-plane taint |
 | `archbtw` worker | Media, databases, downloads, image processing, transcoding | Label as media/compute/storage capable; attach or mount the media storage here |
-| Raspberry Pi worker | Network, proxy, monitoring, security, small automation | ARM64-compatible images and conservative requests/limits |
 
-Application releases must select a node class intentionally. Heavy releases
-must not fall back to the Raspberry Pis, and no application may tolerate the
-control-plane taint merely to make scheduling succeed.
+Application releases must select the media worker intentionally, and no
+application may tolerate the control-plane taint merely to make scheduling
+succeed.
 
 Suggested label contract for the future workers:
 
@@ -94,8 +86,8 @@ homelab.bupd.dev/storage=media
 homelab.bupd.dev/accelerator=<none|intel|amd|nvidia>
 ```
 
-Pi workers should use `homelab.bupd.dev/node-class=edge-worker`. Actual node
-names and accelerator labels are added only after the nodes have registered.
+Actual node names and accelerator labels are added only after the nodes have
+registered.
 
 ## Network and service identities
 
@@ -253,10 +245,9 @@ or Kubernetes Node object.
 2. Attach/mount the HDD and fast application-state filesystem to the intended
    media worker.
 3. Add declarative labels, placement rules, and resource reservations.
-4. Join the Raspberry Pis as agent-only edge workers when ready.
 
 Exit gate: a test Pod can use persistent media and fast-state volumes on the
-media worker, and cannot land on the control plane or an unsuitable Pi.
+media worker, and cannot land on the control plane.
 
 ### Phase 2 — Bootstrap OCI reconciliation and private ingress
 
