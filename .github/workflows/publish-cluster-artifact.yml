@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 env:
-  CONTAINER_RUNTIME: docker
+  CONTAINER_RUNTIME: podman
   OCI_REPOSITORY: oci://ghcr.io/bupd/homelab/cluster
 
 jobs:
@@ -22,6 +22,9 @@ jobs:
         uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # v3
         with:
           just-version: 1.56.0
+
+      - name: Install and verify Podman on runner
+        run: just ci-install-container-runtime
 
       - name: Validate desired state
         run: just validate
@@ -44,6 +47,9 @@ jobs:
         uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # v3
         with:
           just-version: 1.56.0
+
+      - name: Install and verify Podman on runner
+        run: just ci-install-container-runtime
 
       - name: Publish immutable artifact and update latest
         env:
