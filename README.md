@@ -1,178 +1,295 @@
 # Homelab
 
-Declarative K3s homelab managed with FluxCD and Helm. Applications and cluster
-add-ons run inside Kubernetes; Docker Compose is not part of the deployment
-model.
+One K3s control plane, one media worker, and FluxCD deploying media apps from a
+public GHCR OCI artifact.
 
-## Architecture
-
-The `homelab` cluster has one intentionally authoritative control plane and any
-number of agent-only workers.
-
-See [Homelab architecture and rollout plan](docs/architecture-plan.md) for the
-target-system diagram, workload placement, service data flows, phased rollout,
-exit gates, and production-readiness criteria.
-
-| Node | LAN address | Tailnet address | K3s role | Workload policy |
-| --- | --- | --- | --- | --- |
-| `archbtw` | `192.168.0.4` | `100.81.118.34` | Agentless server/control plane | Cannot run Pods |
-| `media-worker` | `10.89.0.2` | None | Containerized agent/worker | Media, storage, and GPU workloads |
-
-The control plane is deliberately not highly available. Losing `archbtw`
-makes the Kubernetes API unavailable until that machine is restored, while
-worker capacity can be expanded without changing the control-plane topology.
-
-## Repository layout
+## The simple picture
 
 ```text
-clusters/
-  homelab/
-    bootstrap/             # Root OCI source and reconciliation
-    cluster/               # Ordered Flux Kustomizations
-    flux-system/           # Pinned one-time Flux installation
-    nodes/                 # One declarative policy per registered node
-apps/
-  media/                   # Media applications and their owned dependencies
-platform/
-  controllers/             # Shared operators such as CloudNativePG
-hosts/
-  homelab/
-    k3s/                   # Host bootstrap configuration installed under /etc
-    k3s-agents/            # Isolated worker definitions and reconcilers
-docs/                       # Architecture and operational documentation
+archbtw                       media-worker
+K3s API + datastore           Kubernetes Pods
+no application Pods           Immich + PostgreSQL + Valkey
+        |                             ^
+        +---------- schedules --------+
+
+GitHub push -> ghcr.io/bupd/homelab/cluster:latest -> Flux -> cluster
 ```
 
-Host configuration and cluster configuration are intentionally separate:
+Flux is installed once in the cluster. Do not install Flux on every worker.
+When another worker joins K3s, the existing Flux controllers can manage it.
 
-- `hosts/` contains files required before Kubernetes and Flux can run, such as
-  the K3s server configuration, kernel modules, and sysctl settings.
-- `clusters/` contains cluster bootstrap, reconciliation, and Node policy.
-- `apps/` contains application-owned resources, including per-app databases.
-- `platform/` contains shared operators and services consumed by applications.
-- Each application is installed through a pinned Helm release declared in the
-  GHCR OCI desired-state artifact. Runtime edits are treated as drift.
+## Before you start
 
-## Current state
+Run these steps on `archbtw` from the repository root unless a step says
+otherwise.
 
-- K3s `v1.36.2+k3s1` is running on `archbtw`.
-- The local kubeconfig context is named `homelab`.
-- CoreDNS, metrics-server, local-path-provisioner, Traefik, and ServiceLB are
-  currently provided by the default K3s installation. Traefik and ServiceLB
-  are transitional and are disabled in the declared host configuration.
-- The desired host state declares `archbtw` agentless and `media-worker` as
-  the only Kubernetes Node.
-- Flux bootstrap and Immich release manifests are present but have not been
-  applied to the cluster yet.
-- Tailscale is installed but must be logged back into the tailnet before its
-  declared address and MagicDNS name are reachable.
+You need:
 
-## Private access
+- Arch Linux with a working NVIDIA driver;
+- the media disk with UUID `ACCA4642CA460952` attached;
+- this repository checked out;
+- permission to push to `bupd/homelab`; and
+- the GHCR package `ghcr.io/bupd/homelab/cluster` set to public.
 
-The cluster has no public ingress. Remote administrative access and application
-traffic stay inside the Tailscale network:
+Install the host tools:
 
-- Kubernetes API: `https://archbtw.tail6c5ea9.ts.net:6443`
-- Control-plane tailnet IP: `100.81.118.34`
-- Applications: individual tailnet-only MagicDNS names provisioned by the
-  Flux-managed Tailscale Kubernetes Operator, using the bare application name
-  such as `immich.tail6c5ea9.ts.net` or `sonarr.tail6c5ea9.ts.net`
-- Tailscale Funnel: prohibited
+```bash
+sudo pacman -S --needed curl podman nvidia-container-toolkit
+brew install just
+```
 
-The LAN API address remains available for agent registration. No application
-will use a public `LoadBalancer`, public DNS record, router port forward, or
-Funnel annotation. See `docs/networking.md` for the complete policy.
+Check them:
 
-The `192.168.0.0/24` network is only the cluster underlay. It is never an
-application identity. Every user-facing service must have a dedicated
-Tailscale MagicDNS name, and the application must be configured with that exact
-HTTPS URL as its external/base URL.
+```bash
+podman info
+nvidia-smi
+nvidia-ctk --version
+just --version
+```
 
-## Reconcile the host first
+`just` is the only project command runner. It builds a pinned tool container
+for Flux, Helm, kubectl, and yq. Those tools do not need to be installed on the
+host.
 
-The host reconciler joins `media-worker`, waits for it to become ready, and
-only then removes the embedded agent from `archbtw`:
+## Fresh install: do these steps in order
+
+### 1. Check the machine and disk
+
+The checked-in addresses and disk UUID are specific to this homelab. Confirm
+them before installing anything:
+
+```bash
+ip address show
+lsblk -f
+grep -v '^#' hosts/homelab/k3s-agents/media-worker/media-worker.fstab
+```
+
+Expected control-plane LAN address: `192.168.0.4`.
+
+Create the mount point. The worker reconciler installs the persistent mount:
+
+```bash
+sudo install -d -m 0755 /home/bupd/hdd/data
+```
+
+Stop here if the address or disk UUID is wrong. Fix the checked-in files first.
+
+### 2. Create the K3s cluster
+
+Install the declared server configuration before K3s starts:
+
+```bash
+sudo install -d -m 0755 /etc/rancher/k3s
+sudo install -m 0600 hosts/homelab/k3s/config.yaml /etc/rancher/k3s/config.yaml
+sudo install -m 0644 hosts/homelab/k3s/modules-load.conf /etc/modules-load.d/k3s.conf
+sudo install -m 0644 hosts/homelab/k3s/sysctl.conf /etc/sysctl.d/90-k3s.conf
+sudo modprobe overlay br_netfilter
+sudo sysctl --system
+```
+
+Install the pinned K3s release:
+
+```bash
+curl -sfL https://get.k3s.io \
+  | sudo env INSTALL_K3S_VERSION='v1.36.2+k3s1' sh -
+```
+
+Check the control plane:
+
+```bash
+sudo systemctl status k3s --no-pager
+sudo k3s kubectl get --raw=/readyz
+```
+
+`kubectl get nodes` can be empty at this point. The server is agentless and is
+not a Kubernetes worker.
+
+### 3. Create and join `media-worker`
+
+Run the host reconciler:
 
 ```bash
 sudo hosts/homelab/k3s-agents/media-worker/reconcile.sh
 ```
 
-Do this before reconciling `clusters/homelab`; applying a Node policy before its
-agent joins would create a phantom Node.
+It mounts the HDD, creates the Podman K3s agent, copies the private K3s token,
+joins the worker, applies its labels, moves system Pods to it, and verifies the
+GPU and storage mounts.
 
-## Local prerequisite
-
-Install [Just](https://just.systems/) as the single local workflow entry point:
+Check the result:
 
 ```bash
-brew install just
+sudo k3s kubectl get nodes -o wide
+sudo k3s kubectl get pods -A -o wide
+sudo podman ps --filter name=media-worker
 ```
 
-The GitOps recipes build and run their pinned tool container automatically, so
-Flux, Helm, kubectl, and yq do not need to be installed directly on the host.
-Podman is required as the container runtime; set `CONTAINER_RUNTIME=docker` if
-Docker is preferred.
+Expected result: the only Kubernetes Node is `media-worker`, and it is `Ready`.
+`archbtw` must not appear as a Node.
 
-## Apply the current cluster configuration
+### 4. Create the local kubeconfig
 
-Select the cluster kubeconfig:
+The Just recipes expect `$HOME/.kube/k3s.kubeconfig.yaml` and context
+`homelab`:
+
+```bash
+install -d -m 0700 "$HOME/.kube"
+sudo cp /etc/rancher/k3s/k3s.yaml "$HOME/.kube/k3s.kubeconfig.yaml"
+sudo chown "$(id -u):$(id -g)" "$HOME/.kube/k3s.kubeconfig.yaml"
+chmod 0600 "$HOME/.kube/k3s.kubeconfig.yaml"
+export KUBECONFIG="$HOME/.kube/k3s.kubeconfig.yaml"
+kubectl config rename-context default homelab
+kubectl config use-context homelab
+kubectl get nodes
+```
+
+If the context is already named `homelab`, skip the `rename-context` command.
+Never commit this file. It is a cluster-admin credential.
+
+### 5. Validate and publish the desired state
+
+Validate all Kustomizations, YAML, and pinned Helm charts locally:
+
+```bash
+just validate
+```
+
+Push or merge the desired state to `main`:
+
+```bash
+git push origin main
+```
+
+GitHub Actions validates the repository, publishes an immutable commit-tagged
+artifact, and moves `ghcr.io/bupd/homelab/cluster:latest` to that artifact.
+Wait for the `Publish homelab cluster artifact` workflow to succeed before
+continuing.
+
+To publish manually instead:
+
+```bash
+GHCR_USERNAME=bupd \
+GHCR_TOKEN='<GitHub token with write:packages>' \
+just artifact-push
+```
+
+Flux pulls the public artifact anonymously. No GHCR pull Secret is needed.
+
+### 6. Install Flux once
 
 ```bash
 export KUBECONFIG="$HOME/.kube/k3s.kubeconfig.yaml"
-kubectl config use-context homelab
+just flux-install
 ```
 
-Preview the rendered resources:
+This installs only the Flux CRDs and controllers. Check them:
 
 ```bash
-kubectl kustomize clusters/homelab/nodes
+kubectl -n flux-system get pods -o wide
 ```
 
-Apply them using server-side ownership compatible with Flux:
+All Flux Pods should become `Running` on `media-worker`.
+
+### 7. Point Flux at GHCR and deploy everything
 
 ```bash
-kubectl apply --server-side -k clusters/homelab/nodes
+just flux-bootstrap
+just flux-reconcile
+just flux-status
 ```
 
-Verify that the worker is the only Kubernetes Node:
+That starts this dependency chain:
+
+```text
+node policy
+  -> CloudNativePG operator
+  -> Immich PostgreSQL database
+  -> Immich Helm release
+```
+
+Flux checks the public `latest` OCI artifact every two minutes. Future pushes
+to `main` are deployed automatically. Pushes to other branches publish an
+immutable artifact but do not move `latest`.
+
+### 8. Check Immich
 
 ```bash
-kubectl get nodes -o wide
-kubectl get pods -A --field-selector spec.nodeName=archbtw
+kubectl -n immich get pods,pvc
+kubectl -n immich get clusters.postgresql.cnpg.io,databases.postgresql.cnpg.io
+kubectl -n immich get helmrelease,ocirepository
+kubectl -n immich rollout status deployment/immich-server --timeout=15m
 ```
 
-## Adding workers
+There is no ingress yet. Open a temporary local tunnel:
 
-Worker installation is a host bootstrap operation and cannot be performed by a
-Kubernetes manifest. Install the matching K3s agent on the new machine using
-`https://192.168.0.4:6443` and the server's private node token.
+```bash
+kubectl -n immich port-forward service/immich-server 2283:2283
+```
 
-After the agent registers:
+Open <http://127.0.0.1:2283>.
 
-1. Confirm that the Node is `Ready` and record its exact Kubernetes name.
-2. Add `clusters/homelab/nodes/<node-name>/node-policy.yaml`.
-3. Reference the policy from `clusters/homelab/nodes/kustomization.yaml`.
-4. Render and apply the cluster configuration.
+Do not create a new admin account if restoring the existing library. Follow
+[Immich backup and restore](apps/media/immich/README.md#backup-and-restore) to
+restore the existing database, verify the photos, and enable scheduled
+backups.
 
-Never commit the K3s token, kubeconfig credentials, or unencrypted application
-secrets.
+## Normal daily operation
 
-## Storage conventions
+Change manifests, validate, then push to `main`:
 
-- Application configuration and database state belong under `/opt/<service>`
-  on the ext4 filesystem of the node that owns the workload, or on storage
-  exposed through an explicitly selected CSI/NFS provisioner.
-- Bulk photos, media, and downloads belong under `/home/bupd/hdd/data`.
-- PostgreSQL and other databases must not be placed on the NTFS media disk.
-- Host-backed volumes require explicit node affinity because their contents do
-  not follow a Pod to another worker.
+```bash
+just validate
+git add --all
+git commit -m 'describe the cluster change'
+git push origin main
+```
 
-The media HDD is physically attached to `archbtw`. The `media-worker` system
-container receives `/home/bupd/hdd/data` at the same absolute path, so a Pod
-with hard affinity to `media-worker` can use a reviewed local `hostPath` there.
+Watch reconciliation:
 
-## Planned services
+```bash
+just flux-status
+```
 
-The initial application rollout is Immich, followed by Jellyfin, Transmission,
-Sonarr, Radarr, Prowlarr, Bazarr, File Browser, and related Arr services. Each
-service will be deployed through Flux and Helm with declarative storage,
-networking, resource, and backup policies.
+Do not fix managed resources with `kubectl edit`. Flux will revert the change.
+Edit this repository and publish a new artifact.
+
+## Add another worker later
+
+Flux does not join machines to Kubernetes. First install and join a K3s agent
+using the server address `https://192.168.0.4:6443` and the private token at
+`/var/lib/rancher/k3s/server/node-token`.
+
+After the Node is `Ready`:
+
+1. Add `clusters/homelab/nodes/<node-name>/node-policy.yaml`.
+2. Add that file to `clusters/homelab/nodes/kustomization.yaml`.
+3. Add node selectors or affinity only to workloads intended for that node.
+4. Run `just validate`, commit, and push to `main`.
+
+Do not install another copy of Flux on the worker.
+
+## Where things live
+
+```text
+hosts/homelab/             host bootstrap, K3s server, worker definition
+clusters/homelab/          Flux installation and cluster reconciliation graph
+platform/controllers/      shared operators such as CloudNativePG
+apps/media/immich/         Immich, its database, values, storage, and backups
+tools/ci/                   pinned containerized GitOps tools
+```
+
+Storage rules:
+
+- Immich assets: `/home/bupd/hdd/data/BUPD_Personal/immich`
+- Immich database: K3s `local-path` storage on the Linux filesystem
+- Logical database dumps: the asset root's `backups/` directory
+- Never put a live PostgreSQL data directory on the NTFS media disk
+- Host-path storage requires hard node affinity to `media-worker`
+
+More detail:
+
+- [Host configuration](hosts/homelab/README.md)
+- [Cluster reconciliation](clusters/homelab/README.md)
+- [Immich operation and recovery](apps/media/immich/README.md)
+- [Architecture and rollout decisions](docs/architecture-plan.md)
+- [Private networking policy](docs/networking.md)
