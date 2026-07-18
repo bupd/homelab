@@ -17,7 +17,6 @@ exit gates, and production-readiness criteria.
 | --- | --- | --- | --- | --- |
 | `archbtw` | `192.168.0.4` | `100.81.118.34` | Agentless server/control plane | Cannot run Pods |
 | `media-worker` | `10.89.0.2` | None | Containerized agent/worker | Media, storage, and GPU workloads |
-| Future Raspberry Pi nodes | Assigned per host | Assigned by Tailscale | Agent/worker | Lightweight edge workloads |
 
 The control plane is deliberately not highly available. Losing `archbtw`
 makes the Kubernetes API unavailable until that machine is restored, while
@@ -40,7 +39,6 @@ hosts/
   homelab/
     k3s/                   # Host bootstrap configuration installed under /etc
     k3s-agents/            # Isolated worker definitions and reconcilers
-experiments/               # Raspberry Pi and bootc experiments
 docs/                       # Architecture and operational documentation
 ```
 
@@ -100,6 +98,19 @@ sudo hosts/homelab/k3s-agents/media-worker/reconcile.sh
 
 Do this before reconciling `clusters/homelab`; applying a Node policy before its
 agent joins would create a phantom Node.
+
+## Local prerequisite
+
+Install [Just](https://just.systems/) as the single local workflow entry point:
+
+```bash
+brew install just
+```
+
+The GitOps recipes build and run their pinned tool container automatically, so
+Flux, Helm, kubectl, and yq do not need to be installed directly on the host.
+Podman is required as the container runtime; set `CONTAINER_RUNTIME=docker` if
+Docker is preferred.
 
 ## Apply the current cluster configuration
 
