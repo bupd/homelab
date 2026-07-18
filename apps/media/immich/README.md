@@ -5,10 +5,18 @@ This folder owns the whole Immich deployment:
 - `database/`: namespace, dedicated CloudNativePG database, and backup job;
 - `app/`: official pinned Immich Helm chart, full `values.yaml`, and storage;
 - PostgreSQL, Valkey, and machine-learning cache use K3s `local-path`; and
-- photos and database dumps use the existing HDD directory below.
+- Immich-managed photos and database dumps use the existing HDD directory below; and
+- the complete `BUPD_Personal` tree is mounted read-only as an external library.
 
 ```text
 /home/bupd/hdd/data/BUPD_Personal/immich
+```
+
+The Immich server sees the complete personal media tree at:
+
+```text
+Host:      /home/bupd/hdd/data/BUPD_Personal
+Container: /mnt/photos (read-only)
 ```
 
 Immich is hard-pinned to `media-worker`. The live PostgreSQL data directory is
@@ -89,43 +97,24 @@ kubectl -n immich get cronjob immich-database-backup \
 
 Expected before the first restore: `true`.
 
-### Restore the existing installation during onboarding
+### Add all BUPD Personal photos and videos
 
-The existing asset root already contains this legacy database dump:
+Finish fresh onboarding and create the administrator account first. Then, in
+the Immich web UI:
 
-```text
-immich-db-backup-20251114T020000-v1.143.0-pg14.19.sql.gz
-```
+1. Open **Administration -> External Libraries**.
+2. Click **Create Library** and select its owner.
+3. Name it `BUPD Personal`.
+4. Add `/mnt/photos` as the import path.
+5. Add `**/immich/**` as an exclusion pattern. This is mandatory: without it,
+   Immich will recursively index its own uploads, thumbnails, and encoded videos.
+6. Click **Scan New Library Files**.
+7. Watch **Administration -> Jobs** for library, metadata, thumbnail, and
+   machine-learning progress.
 
-First confirm the files exist on `archbtw`:
-
-```bash
-sudo find /home/bupd/hdd/data/BUPD_Personal/immich \
-  -maxdepth 1 -type d -printf '%f\n' | sort
-sudo ls -lh /home/bupd/hdd/data/BUPD_Personal/immich/backups/*.sql.gz
-```
-
-You should see `backups`, `encoded-video`, `library`, `profile`, `thumbs`, and
-`upload`.
-
-Start the tunnel if it is not already running:
-
-```bash
-kubectl -n immich port-forward service/immich-server 2283:2283
-```
-
-In the browser:
-
-1. Open <http://127.0.0.1:2283>.
-2. On the welcome screen, choose **Restore from backup**.
-3. Let Immich run the storage-folder integrity check.
-4. Stop if any required folder is missing or unreadable.
-5. Select the existing `v1.143.0` `.sql.gz` backup. If it is not listed,
-   upload that file from the `backups/` directory.
-6. Confirm the restore.
-7. Wait while Immich restores PostgreSQL and runs its database migrations.
-
-Do not create a new administrator before doing this onboarding restore.
+The scan is recursive. Immich imports supported photos and videos and ignores
+unsupported files such as documents and audio. The mount is read-only, so
+deleting an external asset in Immich cannot delete the source file.
 
 ### Verify the restore
 

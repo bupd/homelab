@@ -71,6 +71,14 @@ valkey:
 
 server:
   enabled: true
+  persistence:
+    external-library:
+      enabled: true
+      type: persistentVolumeClaim
+      existingClaim: immich-external-library
+      globalMounts:
+        - path: /mnt/photos
+          readOnly: true
   controllers:
     main:
       containers:
