@@ -1,6 +1,6 @@
 # instance1 K3s host
 
-`archbtw` is the authoritative K3s server for the `ins1` cluster.
+`archbtw` is the authoritative K3s server for the `homelab` cluster.
 
 Simple model:
 
@@ -18,5 +18,5 @@ enabled accidentally. Normal scheduling protection comes from having no
 kubelet or container runtime on the control plane at all.
 
 Cluster objects, infrastructure add-ons, and applications are declared under
-`clusters/ins1` and will be reconciled by Flux. Host-level K3s configuration
+`clusters/homelab` and will be reconciled by Flux. Host-level K3s configuration
 remains here because it must exist before Kubernetes and Flux start.

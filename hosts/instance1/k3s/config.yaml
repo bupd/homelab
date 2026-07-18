@@ -1,4 +1,4 @@
-# K3s server configuration for the authoritative ins1 control plane.
+# K3s server configuration for the authoritative homelab control plane.
 node-name: archbtw
 node-ip: 192.168.0.4
 advertise-address: 192.168.0.4
