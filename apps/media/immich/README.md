@@ -5,11 +5,11 @@ This folder owns the whole Immich deployment:
 - `database/`: namespace, dedicated CloudNativePG database, and backup job;
 - `app/`: official pinned Immich Helm chart, full `values.yaml`, and storage;
 - PostgreSQL, Valkey, and machine-learning cache use K3s `local-path`; and
-- Immich-managed photos and database dumps use the existing HDD directory below; and
+- Immich-managed writable storage uses a K3s `local-path` PVC on Linux; and
 - the complete `BUPD_Personal` tree is mounted read-only as an external library.
 
 ```text
-/home/bupd/hdd/data/BUPD_Personal/immich
+/var/lib/rancher/k3s/storage/...
 ```
 
 The Immich server sees the complete personal media tree at:
@@ -66,7 +66,8 @@ Current locations:
 ```text
 Database data:  K3s local-path PVC on media-worker's Linux filesystem
 Database dumps: /home/bupd/hdd/data/BUPD_Personal/immich/backups
-Assets:         /home/bupd/hdd/data/BUPD_Personal/immich
+Managed assets: K3s local-path PVC `immich-managed-library`
+External media: /home/bupd/hdd/data/BUPD_Personal (read-only)
 ```
 
 The HDD copy protects against a broken database, but it does not protect

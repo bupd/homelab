@@ -24,9 +24,10 @@ immich:
     # Enabling this creates ServiceMonitors for the Prometheus operator.
     enabled: true
   persistence:
-    # The chart requires the library PVC to be created separately.
+    # Writable Immich-managed storage stays on the node's Linux filesystem.
+    # The NTFS personal-media disk is mounted separately and read-only.
     library:
-      existingClaim: immich-library
+      existingClaim: immich-managed-library
   # immich-config.json represented as YAML.
   # ref: https://immich.app/docs/install/config-file/
   configuration:
@@ -81,9 +82,7 @@ server:
           readOnly: true
   controllers:
     main:
-      # Keep the API and microservices stopped while the NTFS media disk is
-      # repaired. Set this back to 1 when maintenance is complete.
-      replicas: 0
+      replicas: 1
       containers:
         main:
           image:
