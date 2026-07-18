@@ -3,8 +3,11 @@ kind: Kustomization
 
 resources:
   - nodes.yaml
-  - platform.yaml
   - networking.yaml
   - observability.yaml
-  - immich-database.yaml
-  - immich.yaml
+
+  # Disabled for the initial platform-only rollout.
+  # Uncomment all three lines below to enable CloudNativePG and Immich.
+  # - platform.yaml
+  # - immich-database.yaml
+  # - immich.yaml
