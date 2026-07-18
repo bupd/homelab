@@ -165,12 +165,31 @@ flux-sops-key: ci-image
     test -f "{{sops_age_key}}"
     {{container_runtime}} run --rm --network=host \
       --env KUBE_CONTEXT="{{kube_context}}" --env KUBECONFIG=/kubeconfig \
+      -v "{{repo_dir}}:/workspace:ro" \
       -v "{{kubeconfig}}:/kubeconfig:ro" \
       -v "{{sops_age_key}}:/sops-age-key:ro" \
-      "{{ci_image}}" bash -euo pipefail -c \
-      'kubectl --context "$KUBE_CONTEXT" -n flux-system create secret generic sops-age \
-        --from-file=identity.agekey=/sops-age-key --dry-run=client -o yaml \
-        | kubectl --context "$KUBE_CONTEXT" apply --server-side -f -'
+      -w /workspace \
+      "{{ci_image}}" just _flux-sops-key
+
+[private]
+_flux-sops-key:
+    kubectl --context "{{kube_context}}" -n flux-system create secret generic sops-age \
+      --from-file=identity.agekey=/sops-age-key --dry-run=client -o yaml \
+      | kubectl --context "{{kube_context}}" apply --server-side -f -
+
+# First-time Flux bring-up: install controllers, install the SOPS key, bootstrap, reconcile, and report status.
+flux-up: ci-image
+    test -f "{{sops_age_key}}"
+    {{container_runtime}} run --rm --network=host \
+      --env KUBE_CONTEXT="{{kube_context}}" --env KUBECONFIG=/kubeconfig \
+      -v "{{repo_dir}}:/workspace:ro" \
+      -v "{{kubeconfig}}:/kubeconfig:ro" \
+      -v "{{sops_age_key}}:/sops-age-key:ro" \
+      -w /workspace \
+      "{{ci_image}}" just _flux-up
+
+[private]
+_flux-up: _flux-install _flux-sops-key _flux-bootstrap _flux-reconcile _flux-status
 
 # Point the installed Flux controllers at the GHCR desired-state artifact.
 flux-bootstrap: ci-image
