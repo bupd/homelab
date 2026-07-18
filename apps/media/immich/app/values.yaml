@@ -35,6 +35,9 @@ immich:
   configuration:
     server:
       externalDomain: https://immich.tail6c5ea9.ts.net
+    ffmpeg:
+      accel: nvenc
+      accelDecode: true
     # trash:
     #   enabled: false
     #   days: 30
@@ -74,6 +77,8 @@ valkey:
 
 server:
   enabled: true
+  defaultPodOptions:
+    runtimeClassName: nvidia
   persistence:
     external-library:
       enabled: true
@@ -131,6 +136,7 @@ server:
           resources:
             limits:
               memory: 4Gi
+              nvidia.com/gpu: 1
             requests:
               cpu: 500m
               memory: 1Gi
@@ -150,12 +156,15 @@ server:
 
 machine-learning:
   enabled: true
+  defaultPodOptions:
+    runtimeClassName: nvidia
   controllers:
     main:
       containers:
         main:
           image:
             repository: ghcr.io/immich-app/immich-machine-learning
+            tag: v3.0.3-cuda
             pullPolicy: IfNotPresent
           env:
             TRANSFORMERS_CACHE: /cache
@@ -164,6 +173,7 @@ machine-learning:
           resources:
             limits:
               memory: 6Gi
+              nvidia.com/gpu: 1
             requests:
               cpu: 500m
               memory: 1Gi

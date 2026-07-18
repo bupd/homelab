@@ -286,6 +286,7 @@ node policy
   -> Tailscale Operator
   -> kube-prometheus-stack
   -> CloudNativePG operator
+  -> NVIDIA device plugin
   -> Immich database
   -> Immich
 ```
@@ -338,6 +339,8 @@ kubectl -n immich get clusters.postgresql.cnpg.io,databases.postgresql.cnpg.io
 kubectl -n immich get helmrelease,ocirepository
 kubectl -n immich rollout status deployment/immich-server --timeout=15m
 kubectl -n immich get ingress immich
+kubectl get node media-worker \
+  -o jsonpath='{.status.allocatable.nvidia\.com/gpu}{" GPU slots\n"}'
 ```
 
 Immich is private at <https://immich.tail6c5ea9.ts.net>. For recovery before
@@ -403,9 +406,10 @@ tools/ci/                   pinned containerized GitOps tools
 
 Storage rules:
 
-- Immich assets: `/home/bupd/hdd/data/BUPD_Personal/immich`
+- Immich-managed assets: `/home/bupd/hdd/data/immich/library`
+- Existing external media: `/home/bupd/hdd/data/BUPD_Personal`
 - Immich database: K3s `local-path` storage on the Linux filesystem
-- Logical database dumps: the asset root's `backups/` directory
+- Logical database dumps: `/home/bupd/hdd/data/immich/backups`
 - Never put a live PostgreSQL data directory on the NTFS media disk
 - Host-path storage requires hard node affinity to `media-worker`
 

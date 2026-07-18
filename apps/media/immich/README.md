@@ -31,6 +31,29 @@ duplicates.
 Immich is hard-pinned to `media-worker`. The live PostgreSQL data directory is
 on the worker's Linux filesystem, not the NTFS media disk.
 
+## NVIDIA GPU acceleration
+
+The platform deploys NVIDIA's device plugin on `media-worker` and advertises
+two time-sliced `nvidia.com/gpu` slots backed by its RTX 3060. Immich uses one
+slot for CUDA machine learning and one for NVENC video transcoding. Both Pods
+use K3s's `nvidia` RuntimeClass.
+
+Verify Kubernetes and the containers:
+
+```bash
+kubectl get node media-worker \
+  -o jsonpath='{.status.allocatable.nvidia\.com/gpu}{" GPU slots\n"}'
+kubectl -n nvidia-device-plugin get pods
+kubectl -n immich get pods \
+  -o custom-columns=NAME:.metadata.name,RUNTIME:.spec.runtimeClassName,GPU:.spec.containers[0].resources.limits.nvidia\.com/gpu
+kubectl -n immich exec deployment/immich-machine-learning -- nvidia-smi
+kubectl -n immich exec deployment/immich-server -- nvidia-smi
+```
+
+Machine-learning logs should report `CUDAExecutionProvider` after a Smart
+Search or Face Detection job begins. NVENC is selected in the Flux-managed
+Immich configuration file with hardware decoding enabled.
+
 ## First deployment
 
 Flux deploys the pieces in this order:
