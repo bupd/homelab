@@ -83,6 +83,21 @@ server:
   controllers:
     main:
       replicas: 1
+      initContainers:
+        storage-init:
+          image:
+            repository: ghcr.io/immich-app/immich-server
+            tag: v3.0.0
+            pullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              for directory in upload library thumbs encoded-video profile backups; do
+                mkdir -p "/data/${directory}"
+                touch "/data/${directory}/.immich"
+              done
       containers:
         main:
           image:
