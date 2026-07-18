@@ -81,6 +81,9 @@ server:
           readOnly: true
   controllers:
     main:
+      # Keep the API and microservices stopped while the NTFS media disk is
+      # repaired. Set this back to 1 when maintenance is complete.
+      replicas: 0
       containers:
         main:
           image:
