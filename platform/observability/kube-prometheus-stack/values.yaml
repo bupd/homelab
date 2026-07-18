@@ -1,0 +1,89 @@
+# Homelab overrides for kube-prometheus-stack 87.17.0.
+defaultRules:
+  create: true
+
+# K3s embeds these control-plane components. Their default upstream scrape
+# targets do not match this agentless K3s topology.
+kubeControllerManager:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+
+prometheusOperator:
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+prometheus:
+  prometheusSpec:
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorNamespaceSelector: {}
+    retention: 15d
+    retentionSize: 40GB
+    resources:
+      limits:
+        memory: 4Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    ruleSelectorNilUsesHelmValues: false
+    ruleNamespaceSelector: {}
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 50Gi
+          storageClassName: local-path
+
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 50m
+        memory: 128Mi
+    retention: 120h
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 5Gi
+          storageClassName: local-path
+
+grafana:
+  admin:
+    existingSecret: grafana-admin
+    passwordKey: admin-password
+    userKey: admin-user
+  defaultDashboardsEnabled: true
+  defaultDashboardsTimezone: Asia/Kolkata
+  grafana.ini:
+    server:
+      domain: grafana.tail6c5ea9.ts.net
+      root_url: https://grafana.tail6c5ea9.ts.net
+  persistence:
+    accessModes:
+      - ReadWriteOnce
+    enabled: true
+    size: 10Gi
+    storageClassName: local-path
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
