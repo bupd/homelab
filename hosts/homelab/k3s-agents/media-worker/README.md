@@ -54,7 +54,7 @@ handles failures after a successful start.
 From the repository root:
 
 ```bash
-sudo hosts/instance1/k3s-agents/media-worker/reconcile.sh
+sudo hosts/homelab/k3s-agents/media-worker/reconcile.sh
 ```
 
 Run the same command again after changing one of these files. The script is

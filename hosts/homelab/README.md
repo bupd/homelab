@@ -1,4 +1,4 @@
-# instance1 host files
+# homelab host files
 
 This folder describes things that must exist before Kubernetes can manage
 itself.

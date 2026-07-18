@@ -1,4 +1,4 @@
-# instance1 K3s host
+# homelab K3s host
 
 `archbtw` is the authoritative K3s server for the `homelab` cluster.
 
