@@ -238,23 +238,37 @@ kubectl -n flux-system get pods -o wide
 
 All Flux Pods should become `Running` on `media-worker`.
 
-### 7. Give the Tailscale Operator its bootstrap credential
+### 7. Set the Tailscale Operator credential through SOPS
 
 In the Tailscale policy, make `tag:k8s-operator` an owner of `tag:k8s`. Create
 an OAuth client with Devices Core, Auth Keys, and Services write scopes, tagged
 `tag:k8s-operator`.
 
-Create the bootstrap Secret without writing it to this repository:
+Open the
+[Tailscale Trust Credentials page](https://console.tailscale.com/admin/settings/trust-credentials/add),
+choose **OAuth**, and match these scopes and tags:
+
+![Tailscale OAuth scopes for the Kubernetes Operator](docs/image/tailscale-kubernetes-operator-oauth-scopes.png)
+
+The repository contains an encrypted placeholder Secret. Decrypt it locally:
 
 ```bash
-kubectl create namespace tailscale --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n tailscale create secret generic operator-oauth \
-  --from-literal=client_id='<oauth-client-id>' \
-  --from-literal=client_secret='<oauth-client-secret>'
+just decrypt platform/networking/tailscale-operator/operator-oauth.sops.yaml
 ```
 
-The committed Grafana administrator Secret is already encrypted with SOPS.
-See [Secrets with SOPS and Age](docs/secrets.md).
+Edit `platform/networking/tailscale-operator/operator-oauth.dec.yaml` and replace
+both `REPLACE_ME` values with the generated client ID and client secret. Seal it
+again immediately:
+
+```bash
+just encrypt platform/networking/tailscale-operator/operator-oauth.dec.yaml
+just validate
+```
+
+The plaintext copy is removed after encryption. Flux decrypts and creates
+`tailscale/operator-oauth` before the Helm controller installs the operator; no
+manual `kubectl create secret` command is needed. The Grafana administrator
+Secret works the same way. See [Secrets with SOPS and Age](docs/secrets.md).
 
 ### 8. Point Flux at the initial platform artifact
 
