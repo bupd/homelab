@@ -13,6 +13,8 @@ readonly SERVER_SYSCTL="${REPO_ROOT}/hosts/instance1/k3s/sysctl.conf"
 readonly WORKER_CONFIG="${SCRIPT_DIR}/config.yaml"
 readonly WORKER_NETWORK="${SCRIPT_DIR}/media-worker.network"
 readonly WORKER_CONTAINER="${SCRIPT_DIR}/media-worker.container"
+readonly WORKER_ENSURE_SERVICE="${SCRIPT_DIR}/media-worker-ensure.service"
+readonly WORKER_FSTAB="${SCRIPT_DIR}/media-worker.fstab"
 readonly WORKER_POLICY="${REPO_ROOT}/clusters/ins1/nodes/media-worker/node-policy.yaml"
 readonly KUBECTL=(k3s kubectl)
 
@@ -39,6 +41,47 @@ install_if_changed() {
     return 0
   fi
   return 1
+}
+
+reconcile_media_mount() {
+  local desired_entry
+  local fstab_temp
+
+  desired_entry="$(grep -Ev '^[[:space:]]*(#|$)' "${WORKER_FSTAB}")"
+  [[ -n ${desired_entry} ]] || die "${WORKER_FSTAB} has no fstab entry"
+
+  fstab_temp="$(mktemp)"
+  awk -v desired="${desired_entry}" '
+    BEGIN { replaced = 0 }
+    $0 !~ /^[[:space:]]*#/ && $2 == "/home/bupd/hdd/data" {
+      if (!replaced) {
+        print desired
+        replaced = 1
+      }
+      next
+    }
+    { print }
+    END {
+      if (!replaced) {
+        print ""
+        print "# Homelab media disk (managed by media-worker/reconcile.sh)"
+        print desired
+      }
+    }
+  ' /etc/fstab >"${fstab_temp}"
+
+  findmnt --verify --tab-file "${fstab_temp}" >/dev/null || {
+    rm -f "${fstab_temp}"
+    die "refusing to install an invalid /etc/fstab"
+  }
+
+  if ! cmp -s "${fstab_temp}" /etc/fstab; then
+    if [[ ! -f /var/backups/homelab/fstab.before-media-worker ]]; then
+      install -m 0644 /etc/fstab /var/backups/homelab/fstab.before-media-worker
+    fi
+    install -m 0644 "${fstab_temp}" /etc/fstab
+  fi
+  rm -f "${fstab_temp}"
 }
 
 wait_for_api() {
@@ -99,6 +142,15 @@ wait_for_core_workloads() {
     "${KUBECTL[@]}" -n kube-system rollout status \
       "deployment/${deployment}" --timeout=300s
   done
+
+  # A Deployment can briefly retain a stale Available condition while its
+  # node is reconnecting. Check the live Pod readiness conditions too.
+  "${KUBECTL[@]}" -n kube-system wait --for=condition=Ready \
+    pod -l k8s-app=kube-dns --timeout=300s
+  "${KUBECTL[@]}" -n kube-system wait --for=condition=Ready \
+    pod -l app=local-path-provisioner --timeout=300s
+  "${KUBECTL[@]}" -n kube-system wait --for=condition=Ready \
+    pod -l k8s-app=metrics-server --timeout=300s
 }
 
 remove_control_plane_pods() {
@@ -124,7 +176,7 @@ remove_control_plane_pods() {
 
 for command in \
   install cmp mktemp systemctl systemd-analyze podman k3s nvidia-ctk grep \
-  modprobe sysctl; do
+  awk findmnt mountpoint modprobe sysctl; do
   require_command "${command}"
 done
 
@@ -135,6 +187,8 @@ for file in \
   "${WORKER_CONFIG}" \
   "${WORKER_NETWORK}" \
   "${WORKER_CONTAINER}" \
+  "${WORKER_ENSURE_SERVICE}" \
+  "${WORKER_FSTAB}" \
   "${WORKER_POLICY}"; do
   [[ -f ${file} ]] || die "missing declarative file: ${file}"
 done
@@ -163,6 +217,17 @@ install -d -m 0755 \
   /etc/cdi \
   /var/backups/homelab
 install -d -m 0700 /etc/rancher/k3s-media-worker/node
+
+log "reconciling the persistent media disk mount"
+reconcile_media_mount
+systemctl daemon-reload
+systemctl start home-bupd-hdd-data.automount
+mountpoint -q /home/bupd/hdd/data || {
+  # Accessing an automount path starts the generated mount unit.
+  stat /home/bupd/hdd/data >/dev/null
+}
+mountpoint -q /home/bupd/hdd/data || \
+  die "/home/bupd/hdd/data did not mount"
 
 log "installing kernel configuration"
 install -m 0644 "${SERVER_MODULES}" /etc/modules-load.d/k3s.conf
@@ -207,6 +272,8 @@ if install_if_changed 0644 "${WORKER_CONTAINER}" \
   /etc/containers/systemd/media-worker.container; then
   worker_changed=true
 fi
+install -m 0644 "${WORKER_ENSURE_SERVICE}" \
+  /etc/systemd/system/media-worker-ensure.service
 
 if [[ ! -f /etc/rancher/k3s/config.yaml ]] || \
    ! cmp -s "${SERVER_CONFIG}" /etc/rancher/k3s/config.yaml; then
@@ -224,7 +291,11 @@ systemctl daemon-reload
   die "Quadlet did not generate media-worker-network.service"
 systemd-analyze verify \
   /run/systemd/generator/media-worker.service \
-  /run/systemd/generator/media-worker-network.service
+  /run/systemd/generator/media-worker-network.service \
+  /etc/systemd/system/media-worker-ensure.service
+[[ "$(systemctl show media-worker.service -p WantedBy --value)" == *multi-user.target* ]] || \
+  die "media-worker.service is not linked to multi-user.target"
+systemctl enable media-worker-ensure.service
 
 # Older revisions did not persist /etc/rancher/node/password. Recover only
 # when the local persistent identity is absent and a stale server identity is
