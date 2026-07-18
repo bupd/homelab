@@ -129,8 +129,8 @@ spec:
                   name: tmp
           volumes:
             - hostPath:
-                path: /home/bupd/hdd/data/BUPD_Personal/immich/backups
-                type: Directory
+                path: /home/bupd/hdd/data/immich/backups
+                type: DirectoryOrCreate
               name: backups
             - emptyDir: {}
               name: tmp

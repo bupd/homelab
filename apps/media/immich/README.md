@@ -5,19 +5,28 @@ This folder owns the whole Immich deployment:
 - `database/`: namespace, dedicated CloudNativePG database, and backup job;
 - `app/`: official pinned Immich Helm chart, full `values.yaml`, and storage;
 - PostgreSQL, Valkey, and machine-learning cache use K3s `local-path`; and
-- Immich-managed writable storage uses a K3s `local-path` PVC on Linux; and
-- the complete `BUPD_Personal` tree is mounted read-only as an external library.
+- Immich-managed writable storage uses the media HDD; and
+- the complete `BUPD_Personal` tree is mounted read-write as an external library.
+
+Immich's writable paths are separated from the personal-media tree:
 
 ```text
-/var/lib/rancher/k3s/storage/...
+/home/bupd/hdd/data/immich/library  -> /data
+/home/bupd/hdd/data/immich/backups -> database backup jobs
 ```
 
 The Immich server sees the complete personal media tree at:
 
 ```text
 Host:      /home/bupd/hdd/data/BUPD_Personal
-Container: /mnt/photos (read-only)
+Container: /mnt/photos (read-write)
 ```
+
+This is intentionally destructive access: emptying Immich's trash can delete
+original external-library files. Immich's hash-based duplicate check applies to
+upload libraries and is scoped per library; it is not a global deduplicator for
+the external `BUPD_Personal` tree. Keep an independent backup before deleting
+duplicates.
 
 Immich is hard-pinned to `media-worker`. The live PostgreSQL data directory is
 on the worker's Linux filesystem, not the NTFS media disk.
@@ -65,9 +74,9 @@ Current locations:
 
 ```text
 Database data:  K3s local-path PVC on media-worker's Linux filesystem
-Database dumps: /home/bupd/hdd/data/BUPD_Personal/immich/backups
-Managed assets: K3s local-path PVC `immich-managed-library`
-External media: /home/bupd/hdd/data/BUPD_Personal (read-only)
+Database dumps: /home/bupd/hdd/data/immich/backups
+Managed assets: /home/bupd/hdd/data/immich/library (`immich-managed-library-hdd`)
+External media: /home/bupd/hdd/data/BUPD_Personal (read-write at /mnt/photos)
 ```
 
 The HDD copy protects against a broken database, but it does not protect
@@ -107,15 +116,13 @@ the Immich web UI:
 2. Click **Create Library** and select its owner.
 3. Name it `BUPD Personal`.
 4. Add `/mnt/photos` as the import path.
-5. Add `**/immich/**` as an exclusion pattern. This is mandatory: without it,
-   Immich will recursively index its own uploads, thumbnails, and encoded videos.
-6. Click **Scan New Library Files**.
-7. Watch **Administration -> Jobs** for library, metadata, thumbnail, and
+5. Click **Scan New Library Files**.
+6. Watch **Administration -> Jobs** for library, metadata, thumbnail, and
    machine-learning progress.
 
 The scan is recursive. Immich imports supported photos and videos and ignores
-unsupported files such as documents and audio. The mount is read-only, so
-deleting an external asset in Immich cannot delete the source file.
+unsupported files such as documents and audio. The mount is read-write, so
+emptying the trash for an external asset can delete the source file.
 
 ### Verify the restore
 
@@ -182,7 +189,7 @@ kubectl -n immich create job \
 kubectl -n immich wait \
   --for=condition=complete "job/$backup_job" --timeout=1h
 kubectl -n immich logs "job/$backup_job"
-sudo ls -lh /home/bupd/hdd/data/BUPD_Personal/immich/backups/*.sql.gz
+sudo ls -lh /home/bupd/hdd/data/immich/backups/*.sql.gz
 ```
 
 If the Job fails, inspect it before rerunning:
@@ -221,8 +228,8 @@ kubectl -n immich create job \
 kubectl -n immich wait \
   --for=condition=complete "job/$backup_job" --timeout=1h
 sudo rsync -aH \
-  /home/bupd/hdd/data/BUPD_Personal/immich/ \
-  '<off-host-backup>/immich/'
+  /home/bupd/hdd/data/immich/backups/ \
+  '<off-host-backup>/immich/database-backups/'
 ```
 
 For the strongest consistency, stop writes to Immich while copying. Never

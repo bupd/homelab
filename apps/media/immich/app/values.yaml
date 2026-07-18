@@ -26,10 +26,10 @@ immich:
     # Enabling this creates ServiceMonitors for the Prometheus operator.
     enabled: true
   persistence:
-    # Writable Immich-managed storage stays on the node's Linux filesystem.
-    # The NTFS personal-media disk is mounted separately and read-only.
+    # Writable Immich-managed storage lives on the media HDD. The existing
+    # BUPD_Personal tree is mounted separately as an external library.
     library:
-      existingClaim: immich-managed-library
+      existingClaim: immich-managed-library-hdd
   # immich-config.json represented as YAML.
   # ref: https://immich.app/docs/install/config-file/
   configuration:
@@ -81,9 +81,12 @@ server:
       existingClaim: immich-external-library
       globalMounts:
         - path: /mnt/photos
-          readOnly: true
+          # Immich owns this external library and may delete originals or write
+          # XMP sidecars. Deletions from the UI are therefore destructive.
+          readOnly: false
   controllers:
     main:
+      strategy: Recreate
       replicas: 1
       initContainers:
         storage-init:
@@ -150,6 +153,7 @@ machine-learning:
   enabled: true
   controllers:
     main:
+      strategy: Recreate
       containers:
         main:
           image:
