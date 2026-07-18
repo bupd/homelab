@@ -10,7 +10,8 @@ automation capacity.
 
 Kubernetes objects are reconciled by Flux. Applications and infrastructure
 add-ons are installed with pinned Helm releases. Host bootstrap remains under
-`hosts/`; credentials are encrypted before they enter Git. Docker Compose and
+`hosts/`; credentials are encrypted before they enter an OCI desired-state
+artifact. Docker Compose and
 manual application deployments are outside the target operating model.
 
 ## Target architecture
@@ -45,7 +46,7 @@ flowchart TB
         pi2["Automation / security<br/>hardware-backed operations"]
     end
 
-    git["Git repository"] -->|"desired state"| flux
+    oci["GHCR OCI artifact"] -->|"desired state"| flux
     flux -->|"Kustomize + Helm via API"| cp
     cp -.->|"schedules"| workers
     cp -.->|"schedules lightweight work"| edge
@@ -127,7 +128,7 @@ filesystem requirements:
 | Completed/incomplete downloads | `/home/bupd/hdd/data/downloads` | Same filesystem as media where possible, enabling atomic moves/hardlinks |
 | Application configuration | `/opt/<service>` | Linux filesystem owned by the relevant worker |
 | PostgreSQL, Redis, indexes | Fast Linux filesystem | Never store databases on NTFS |
-| Git-managed configuration | This repository | No runtime data or plaintext secrets |
+| OCI-managed configuration | This repository artifact | No runtime data or plaintext secrets |
 
 Recommended library layout:
 
@@ -213,15 +214,16 @@ The target layout is:
 
 ```text
 clusters/homelab/
-  flux-system/                 # Generated Flux bootstrap manifests
-  infrastructure/
-    controllers/               # Operators and cluster-wide controllers
-    configs/                   # Storage, ingress, policies, observability
-  apps/
-    media/                     # Jellyfin, Arr stack, Transmission, anime, TV
-    photos/                    # Immich and dependencies
-    books/                     # LazyLibrarian and reader services
+  bootstrap/                   # Root GHCR OCI source and reconciliation
+  cluster/                     # Ordered Flux Kustomizations
+  flux-system/                 # Pinned one-time Flux installation
   nodes/                       # Labels and taints for registered nodes
+apps/
+  media/
+    immich/                    # Immich and its dedicated PostgreSQL resources
+    jellyfin/                  # Jellyfin and related application config
+platform/
+  controllers/                 # Shared operators such as CloudNativePG
 hosts/homelab/                 # Host bootstrap, K3s, mounts, worker definitions
 docs/                          # Architecture, operations, recovery, decisions
 ```
@@ -230,7 +232,7 @@ Each deployable component should have a Flux `HelmRepository` or OCI source, a
 pinned `HelmRelease`, values kept beside the release, an explicit namespace,
 resource requests/limits, health checks, storage, placement, and private ingress.
 Use SOPS with age for secrets. Keep one Kustomization per dependency boundary
-so Flux can order controllers, infrastructure configuration, and applications.
+so Flux can order platform controllers, cluster configuration, and applications.
 
 ## Rollout plan
 
@@ -256,14 +258,14 @@ or Kubernetes Node object.
 Exit gate: a test Pod can use persistent media and fast-state volumes on the
 media worker, and cannot land on the control plane or an unsuitable Pi.
 
-### Phase 2 — Bootstrap GitOps and private ingress
+### Phase 2 — Bootstrap OCI reconciliation and private ingress
 
 1. Bootstrap Flux against this branch and cluster path.
 2. Configure SOPS/age secret decryption and recovery-key handling.
 3. Install the Tailscale Kubernetes Operator through a pinned Helm release.
 4. Validate a disposable private HTTPS service from a tailnet client.
 
-Exit gate: a Git commit creates, updates, and removes the test service without
+Exit gate: publishing a new OCI artifact creates, updates, and removes the test service without
 manual in-cluster edits, and the service is unreachable outside the tailnet.
 
 ### Phase 3 — Establish storage, backup, and policy
@@ -320,7 +322,8 @@ private URL where needed, and a documented recovery check.
    rotation, and tailnet lockout.
 
 Exit gate: a fresh operator can diagnose and recover the documented failure
-cases from Git and backups without relying on undocumented cluster state.
+cases from the desired-state OCI artifact and backups without relying on
+undocumented cluster state.
 
 ## Production-readiness standard
 
@@ -330,7 +333,7 @@ does not by itself provide availability or backup.
 
 A service is considered ready only when all of the following are true:
 
-- version and configuration are pinned in Git;
+- version and configuration are pinned in the OCI artifact;
 - secrets are encrypted and recoverable;
 - scheduling and architecture compatibility are explicit;
 - CPU/memory requests and limits are set from observed use;

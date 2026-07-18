@@ -28,7 +28,14 @@ worker capacity can be expanded without changing the control-plane topology.
 ```text
 clusters/
   homelab/
+    bootstrap/             # Root OCI source and reconciliation
+    cluster/               # Ordered Flux Kustomizations
+    flux-system/           # Pinned one-time Flux installation
     nodes/                 # One declarative policy per registered node
+apps/
+  media/                   # Media applications and their owned dependencies
+platform/
+  controllers/             # Shared operators such as CloudNativePG
 hosts/
   homelab/
     k3s/                   # Host bootstrap configuration installed under /etc
@@ -42,8 +49,10 @@ Host configuration and cluster configuration are intentionally separate:
 - `hosts/` contains files required before Kubernetes and Flux can run, such as
   the K3s server configuration, kernel modules, and sysctl settings.
 - `clusters/` contains cluster bootstrap, reconciliation, and Node policy.
-- Each application will be installed through a pinned Helm release declared in
-  Git. Runtime edits are treated as drift rather than configuration.
+- `apps/` contains application-owned resources, including per-app databases.
+- `platform/` contains shared operators and services consumed by applications.
+- Each application is installed through a pinned Helm release declared in the
+  GHCR OCI desired-state artifact. Runtime edits are treated as drift.
 
 ## Current state
 
@@ -54,7 +63,8 @@ Host configuration and cluster configuration are intentionally separate:
   are transitional and are disabled in the declared host configuration.
 - The desired host state declares `archbtw` agentless and `media-worker` as
   the only Kubernetes Node.
-- Flux bootstrap and application releases have not been added yet.
+- Flux bootstrap and Immich release manifests are present but have not been
+  applied to the cluster yet.
 - Tailscale is installed but must be logged back into the tailnet before its
   declared address and MagicDNS name are reachable.
 
