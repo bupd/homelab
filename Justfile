@@ -9,19 +9,20 @@ home_dir := env("HOME")
 kubeconfig := env("KUBECONFIG", home_dir + "/.kube/k3s.kubeconfig.yaml")
 sops_age_key := env("SOPS_AGE_KEY_FILE", home_dir + "/.config/sops/age/keys.txt")
 
+# Show commands. Change nothing.
 default:
     @just --list
 
-# Bootstrap the container runtime in an Ubuntu GitHub Actions job container.
+# CI needs Podman. Install Podman in the GitHub Actions job container.
 ci-install-container-runtime:
     apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates podman
 
-# Build the tool container used by every GitOps recipe.
+# Build tool box container. Change no cluster.
 ci-image:
     {{container_runtime}} build -t "{{ci_image}}" -f tools/ci/Containerfile tools/ci
 
-# Render every GitOps boundary and chart in the pinned tool container.
+# Check all manifests and charts. Push nothing. Change no cluster.
 validate: ci-image
     {{container_runtime}} run --rm --network=host \
       -v "{{repo_dir}}:/workspace:ro" -w /workspace \
@@ -30,6 +31,7 @@ validate: ci-image
 [private]
 _validate: validate-kustomize validate-helm validate-yaml validate-sops validate-names
 
+# Render every Kustomization. Fail when one is broken.
 validate-kustomize:
     #!/usr/bin/env bash
     for directory in \
@@ -49,6 +51,7 @@ validate-kustomize:
       kubectl kustomize "${directory}" >/dev/null
     done
 
+# Render every pinned Helm chart. Install nothing.
 validate-helm:
     #!/usr/bin/env bash
     helm repo add cnpg https://cloudnative-pg.github.io/charts --force-update >/dev/null
@@ -76,6 +79,7 @@ validate-helm:
       --namespace tailscale \
       --values platform/networking/tailscale-operator/values.yaml >/dev/null
 
+# Parse every YAML file. Fail on bad YAML.
 validate-yaml:
     #!/usr/bin/env bash
     while IFS= read -r -d '' file; do
@@ -83,6 +87,7 @@ validate-yaml:
     done < <(find clusters/homelab apps/media/immich platform .github/workflows \
       -type f \( -name '*.yaml' -o -name '*.yml' \) -print0)
 
+# Check SOPS encryption. Hunt plaintext secrets.
 validate-sops:
     #!/usr/bin/env bash
     encrypted=platform/observability/kube-prometheus-stack/grafana-admin.sops.yaml
@@ -93,6 +98,7 @@ validate-sops:
       exit 1
     fi
 
+# Hunt stale instance1 and ins1 names.
 validate-names:
     #!/usr/bin/env bash
     if rg -n -i 'instance1|ins1' . -g '!**/.git/**' -g '!Justfile'; then
@@ -100,7 +106,7 @@ validate-names:
       exit 1
     fi
 
-# Build selected desired state. No scope means everything; --ignore excludes a subtree.
+# Pack chosen layer into local OCI artifact. No scope means all. Push nothing.
 build-artifact *selection: ci-image
     {{container_runtime}} run --rm --network=host \
       --env ARTIFACT_OUTPUT=/workspace/dist/homelab-cluster.tgz \
@@ -116,7 +122,7 @@ _build-artifact *selection: _validate
     mkdir -p "$(dirname "$ARTIFACT_OUTPUT")"
     flux build artifact --path="$stage_dir" --output="$ARTIFACT_OUTPUT"
 
-# Push selected desired state and move latest to it. Requires GHCR_USERNAME and GHCR_TOKEN.
+# Pack chosen layer. Push immutable GHCR artifact. Move latest tag. Change no cluster directly.
 push-artifact *selection: ci-image
     {{container_runtime}} run --rm --network=host \
       --env GHCR_USERNAME --env GHCR_TOKEN --env OCI_TAG --env OCI_SOURCE \
@@ -148,7 +154,7 @@ _push-artifact *selection: _validate
         --creds="${GHCR_USERNAME}:${GHCR_TOKEN}"
     fi
 
-# Install Flux CRDs and controllers once. This does not deploy applications yet.
+# Install Flux controllers once. Deploy no platform or apps yet.
 flux-install: ci-image
     {{container_runtime}} run --rm --network=host \
       --env KUBE_CONTEXT="{{kube_context}}" --env KUBECONFIG=/kubeconfig \
@@ -160,7 +166,7 @@ _flux-install:
     kubectl --context "{{kube_context}}" apply --server-side -k clusters/homelab/flux-system
     kubectl --context "{{kube_context}}" wait --for=condition=Available deployment -n flux-system --all --timeout=5m
 
-# Install the local Age identity used by Flux to decrypt SOPS Secrets.
+# Give Flux local Age key. Flux can now open SOPS secrets.
 flux-sops-key: ci-image
     test -f "{{sops_age_key}}"
     {{container_runtime}} run --rm --network=host \
@@ -177,7 +183,7 @@ _flux-sops-key:
       --from-file=identity.agekey=/sops-age-key --dry-run=client -o yaml \
       | kubectl --context "{{kube_context}}" apply --server-side -f -
 
-# First-time Flux bring-up: install controllers, install the SOPS key, bootstrap, reconcile, and report status.
+# First boot only. Install Flux, give key, watch GHCR, reconcile, show result.
 flux-up: ci-image
     test -f "{{sops_age_key}}"
     {{container_runtime}} run --rm --network=host \
@@ -191,7 +197,7 @@ flux-up: ci-image
 [private]
 _flux-up: _flux-install _flux-sops-key _flux-bootstrap _flux-reconcile _flux-status
 
-# Point the installed Flux controllers at the GHCR desired-state artifact.
+# Tell installed Flux to watch homelab artifact in GHCR.
 flux-bootstrap: ci-image
     {{container_runtime}} run --rm --network=host \
       --env KUBE_CONTEXT="{{kube_context}}" --env KUBECONFIG=/kubeconfig \
@@ -202,7 +208,7 @@ flux-bootstrap: ci-image
 _flux-bootstrap:
     kubectl --context "{{kube_context}}" apply --server-side -k clusters/homelab/bootstrap
 
-# Request immediate source and cluster reconciliation.
+# Tell Flux: pull latest artifact now and reconcile now.
 flux-reconcile: ci-image
     {{container_runtime}} run --rm --network=host \
       --env KUBE_CONTEXT="{{kube_context}}" --env KUBECONFIG=/kubeconfig \
@@ -214,6 +220,7 @@ _flux-reconcile:
     flux --context "{{kube_context}}" reconcile source oci homelab -n flux-system
     flux --context "{{kube_context}}" reconcile kustomization cluster -n flux-system --with-source
 
+# Show Flux, nodes, workloads, storage, ingress, and releases.
 flux-status: ci-image
     {{container_runtime}} run --rm --network=host \
       --env KUBE_CONTEXT="{{kube_context}}" --env KUBECONFIG=/kubeconfig \
