@@ -3,4 +3,4 @@ kind: Kustomization
 
 resources:
   - cloudnative-pg
-  - nvidia-device-plugin
+  - nvidia-gpu-operator

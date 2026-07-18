@@ -286,7 +286,7 @@ node policy
   -> Tailscale Operator
   -> kube-prometheus-stack
   -> CloudNativePG operator
-  -> NVIDIA device plugin
+  -> NVIDIA GPU Operator
   -> Immich database
   -> Immich
 ```

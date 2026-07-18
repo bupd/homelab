@@ -33,17 +33,18 @@ on the worker's Linux filesystem, not the NTFS media disk.
 
 ## NVIDIA GPU acceleration
 
-The platform deploys NVIDIA's device plugin on `media-worker` and advertises
-two time-sliced `nvidia.com/gpu` slots backed by its RTX 3060. Immich uses one
-slot for CUDA machine learning and one for NVENC video transcoding. Both Pods
-use K3s's `nvidia` RuntimeClass.
+The platform deploys NVIDIA's GPU Operator on `media-worker`. It configures the
+NVIDIA runtime in K3s's nested containerd and advertises two time-sliced
+`nvidia.com/gpu` slots backed by the RTX 3060. Immich uses one slot for CUDA
+machine learning and one for NVENC video transcoding. Both Pods use K3s's
+`nvidia` RuntimeClass.
 
 Verify Kubernetes and the containers:
 
 ```bash
 kubectl get node media-worker \
   -o jsonpath='{.status.allocatable.nvidia\.com/gpu}{" GPU slots\n"}'
-kubectl -n nvidia-device-plugin get pods
+kubectl -n gpu-operator get pods
 kubectl -n immich get pods \
   -o custom-columns=NAME:.metadata.name,RUNTIME:.spec.runtimeClassName,GPU:.spec.containers[0].resources.limits.nvidia\.com/gpu
 kubectl -n immich exec deployment/immich-machine-learning -- nvidia-smi

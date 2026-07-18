@@ -1,0 +1,9 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: nvidia
+  namespace: gpu-operator
+spec:
+  interval: 1h
+  timeout: 2m
+  url: https://helm.ngc.nvidia.com/nvidia
