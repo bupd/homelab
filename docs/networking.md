@@ -118,7 +118,7 @@ allowed.
    then makes the control plane agentless and restarts both sides safely.
 3. Confirm that `media-worker` is the only Ready Kubernetes Node.
 4. Bootstrap Flux.
-5. Create the operator's in-cluster OAuth bootstrap Secret, then let Flux
+5. Encrypt the operator OAuth Secret with SOPS, then let Flux create it and
    install the Tailscale Kubernetes Operator through its pinned Helm release.
 6. Expose each application with a tailnet-only Tailscale Ingress.
 

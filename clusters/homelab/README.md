@@ -54,9 +54,10 @@ After bootstrap, the `cluster` Flux `Kustomization` creates the remaining
 ordered reconcilers. Flux is installed once for the Kubernetes cluster, not
 once per worker.
 
-Before `flux-bootstrap`, create the Tailscale `operator-oauth` bootstrap Secret
-as documented in the root README. SOPS-encrypted Secrets are decrypted by each
-Flux Kustomization using `flux-system/sops-age`.
+Before publishing the platform artifact, replace the encrypted placeholders in
+the Tailscale `operator-oauth.sops.yaml` manifest as documented in the root
+README. SOPS-encrypted Secrets are decrypted by each Flux Kustomization using
+`flux-system/sops-age`.
 
 To publish manually instead of waiting for GitHub Actions:
 

@@ -1,4 +1,4 @@
-# The official chart mounts the pre-created Secret `operator-oauth` when the
+# The official chart mounts the Flux-created Secret `operator-oauth` when the
 # oauth values below are empty. Never place OAuth credentials in this file.
 oauth:
   clientId: ""
