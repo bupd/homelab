@@ -4,10 +4,9 @@ metadata:
   name: homelab
   namespace: flux-system
 spec:
-  interval: 5m
+  interval: 2m
   provider: generic
   ref:
     tag: latest
   timeout: 2m
   url: oci://ghcr.io/bupd/homelab/cluster
-

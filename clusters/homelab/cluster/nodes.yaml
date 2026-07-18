@@ -4,13 +4,12 @@ metadata:
   name: nodes
   namespace: flux-system
 spec:
-  interval: 10m
+  interval: 2m
   path: ./clusters/homelab/nodes
   prune: true
-  retryInterval: 1m
+  retryInterval: 30s
   sourceRef:
     kind: OCIRepository
     name: homelab
   timeout: 5m
   wait: true
-

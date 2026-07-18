@@ -6,13 +6,12 @@ metadata:
 spec:
   dependsOn:
     - name: platform
-  interval: 10m
+  interval: 2m
   path: ./apps/media/immich/database
   prune: true
-  retryInterval: 1m
+  retryInterval: 30s
   sourceRef:
     kind: OCIRepository
     name: homelab
   timeout: 15m
   wait: true
-
