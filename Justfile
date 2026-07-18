@@ -7,6 +7,7 @@ ci_image := env("HOMELAB_CI_IMAGE", "localhost/homelab-ci:latest")
 repo_dir := justfile_directory()
 home_dir := env("HOME")
 kubeconfig := env("KUBECONFIG", home_dir + "/.kube/k3s.kubeconfig.yaml")
+sops_age_key := env("SOPS_AGE_KEY_FILE", home_dir + "/.config/sops/age/keys.txt")
 
 default:
     @just --list
@@ -27,7 +28,7 @@ validate: ci-image
       "{{ci_image}}" just _validate
 
 [private]
-_validate: validate-kustomize validate-helm validate-yaml validate-names
+_validate: validate-kustomize validate-helm validate-yaml validate-sops validate-names
 
 validate-kustomize:
     #!/usr/bin/env bash
@@ -38,6 +39,10 @@ validate-kustomize:
       clusters/homelab/nodes \
       platform/controllers \
       platform/controllers/cloudnative-pg \
+      platform/networking \
+      platform/networking/tailscale-operator \
+      platform/observability \
+      platform/observability/kube-prometheus-stack \
       apps/media/immich \
       apps/media/immich/database \
       apps/media/immich/app; do
@@ -58,13 +63,35 @@ validate-helm:
       --version 0.13.1 \
       --namespace immich \
       --values apps/media/immich/app/values.yaml >/dev/null
+    helm repo add prometheus-community \
+      https://prometheus-community.github.io/helm-charts --force-update >/dev/null
+    helm template kube-prometheus-stack \
+      prometheus-community/kube-prometheus-stack \
+      --version 87.17.0 \
+      --namespace observability \
+      --values platform/observability/kube-prometheus-stack/values.yaml >/dev/null
+    helm repo add tailscale https://pkgs.tailscale.com/helmcharts --force-update >/dev/null
+    helm template tailscale-operator tailscale/tailscale-operator \
+      --version 1.98.9 \
+      --namespace tailscale \
+      --values platform/networking/tailscale-operator/values.yaml >/dev/null
 
 validate-yaml:
     #!/usr/bin/env bash
     while IFS= read -r -d '' file; do
       yq eval '.' "${file}" >/dev/null
-    done < <(find clusters/homelab apps/media/immich platform/controllers .github/workflows \
+    done < <(find clusters/homelab apps/media/immich platform .github/workflows \
       -type f \( -name '*.yaml' -o -name '*.yml' \) -print0)
+
+validate-sops:
+    #!/usr/bin/env bash
+    encrypted=platform/observability/kube-prometheus-stack/grafana-admin.sops.yaml
+    [[ "$(sops filestatus "${encrypted}" | jq -r .encrypted)" == true ]]
+    if rg -n 'AGE-SECRET-KEY-|client_secret: tskey-|admin-password: [^E]' \
+      . -g '!**/.git/**' -g '!*.md' -g '!Justfile'; then
+      echo 'possible plaintext secret found' >&2
+      exit 1
+    fi
 
 validate-names:
     #!/usr/bin/env bash
@@ -73,32 +100,44 @@ validate-names:
       exit 1
     fi
 
-# Build the same reproducible artifact that CI publishes.
-artifact-build output="dist/homelab-cluster.tgz": ci-image
-    mkdir -p "$(dirname "{{output}}")"
+# Build selected desired state. No scope means everything; --ignore excludes a subtree.
+build-artifact *selection: ci-image
     {{container_runtime}} run --rm --network=host \
+      --env ARTIFACT_OUTPUT=/workspace/dist/homelab-cluster.tgz \
       -v "{{repo_dir}}:/workspace" -w /workspace \
-      "{{ci_image}}" flux build artifact --path=. --output="{{output}}"
+      "{{ci_image}}" just _build-artifact {{selection}}
 
-# Push an immutable revision and move latest to it. Requires GHCR_USERNAME and GHCR_TOKEN.
-artifact-push: ci-image
+[private]
+_build-artifact *selection: _validate
+    #!/usr/bin/env bash
+    stage_dir=$(mktemp -d)
+    trap 'rm -rf "$stage_dir"' EXIT
+    tools/ci/stage-artifact.sh "$stage_dir" {{selection}}
+    mkdir -p "$(dirname "$ARTIFACT_OUTPUT")"
+    flux build artifact --path="$stage_dir" --output="$ARTIFACT_OUTPUT"
+
+# Push selected desired state and move latest to it. Requires GHCR_USERNAME and GHCR_TOKEN.
+push-artifact *selection: ci-image
     {{container_runtime}} run --rm --network=host \
       --env GHCR_USERNAME --env GHCR_TOKEN --env OCI_TAG --env OCI_SOURCE \
       --env OCI_REVISION --env UPDATE_LATEST --env GITHUB_SHA --env GITHUB_REF_NAME \
       --env OCI_REPOSITORY="{{oci_repository}}" \
       -v "{{repo_dir}}:/workspace:ro" -w /workspace \
-      "{{ci_image}}" just _artifact-push
+      "{{ci_image}}" just _push-artifact {{selection}}
 
 [private]
-_artifact-push: _validate
+_push-artifact *selection: _validate
     #!/usr/bin/env bash
     : "${GHCR_USERNAME:?set GHCR_USERNAME}"
     : "${GHCR_TOKEN:?set GHCR_TOKEN}"
+    stage_dir=$(mktemp -d)
+    trap 'rm -rf "$stage_dir"' EXIT
+    tools/ci/stage-artifact.sh "$stage_dir" {{selection}}
     tag="${OCI_TAG:-${GITHUB_SHA:-$(git rev-parse HEAD)}}"
     source="${OCI_SOURCE:-$(git config --get remote.origin.url 2>/dev/null || printf 'local://homelab')}"
     revision="${OCI_REVISION:-${GITHUB_REF_NAME:-local}@sha1:${tag}}"
     flux push artifact "{{oci_repository}}:${tag}" \
-      --path=. \
+      --path="$stage_dir" \
       --source="${source}" \
       --revision="${revision}" \
       --reproducible \
@@ -120,6 +159,18 @@ flux-install: ci-image
 _flux-install:
     kubectl --context "{{kube_context}}" apply --server-side -k clusters/homelab/flux-system
     kubectl --context "{{kube_context}}" wait --for=condition=Available deployment -n flux-system --all --timeout=5m
+
+# Install the local Age identity used by Flux to decrypt SOPS Secrets.
+flux-sops-key: ci-image
+    test -f "{{sops_age_key}}"
+    {{container_runtime}} run --rm --network=host \
+      --env KUBE_CONTEXT="{{kube_context}}" --env KUBECONFIG=/kubeconfig \
+      -v "{{kubeconfig}}:/kubeconfig:ro" \
+      -v "{{sops_age_key}}:/sops-age-key:ro" \
+      "{{ci_image}}" bash -euo pipefail -c \
+      'kubectl --context "$KUBE_CONTEXT" -n flux-system create secret generic sops-age \
+        --from-file=identity.agekey=/sops-age-key --dry-run=client -o yaml \
+        | kubectl --context "$KUBE_CONTEXT" apply --server-side -f -'
 
 # Point the installed Flux controllers at the GHCR desired-state artifact.
 flux-bootstrap: ci-image
@@ -156,4 +207,6 @@ _flux-status:
     flux --context "{{kube_context}}" get all -A
     kubectl --context "{{kube_context}}" get nodes,pods,pvc -A -o wide
     kubectl --context "{{kube_context}}" get cluster,database -n immich
+    kubectl --context "{{kube_context}}" get prometheus,alertmanager -n observability
+    kubectl --context "{{kube_context}}" get ingress -A
     kubectl --context "{{kube_context}}" get helmrelease,ocirepository -A
