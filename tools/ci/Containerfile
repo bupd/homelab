@@ -1,0 +1,36 @@
+FROM ubuntu:26.04@sha256:3131b4cc82a783df6c9df078f86e01819a13594b865c2cad47bd1bca2b7063bb
+
+ARG FLUX_VERSION=2.9.2
+ARG HELM_VERSION=4.2.2
+ARG JUST_VERSION=1.56.0
+ARG KUBECTL_VERSION=1.36.2
+ARG YQ_VERSION=4.53.3
+
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      bash ca-certificates curl git gzip jq ripgrep tar \
+    && rm -rf /var/lib/apt/lists/* \
+    && architecture="$(dpkg --print-architecture)" \
+    && case "${architecture}" in \
+      amd64) binary_arch=amd64; just_arch=x86_64 ;; \
+      arm64) binary_arch=arm64; just_arch=aarch64 ;; \
+      *) echo "unsupported architecture: ${architecture}" >&2; exit 1 ;; \
+    esac \
+    && work_dir="$(mktemp -d)" \
+    && curl -fsSL "https://github.com/fluxcd/flux2/releases/download/v${FLUX_VERSION}/flux_${FLUX_VERSION}_linux_${binary_arch}.tar.gz" \
+      | tar -xz -C "${work_dir}" flux \
+    && install -m 0755 "${work_dir}/flux" /usr/local/bin/flux \
+    && curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/${binary_arch}/kubectl" -o "${work_dir}/kubectl" \
+    && install -m 0755 "${work_dir}/kubectl" /usr/local/bin/kubectl \
+    && curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${binary_arch}.tar.gz" \
+      | tar -xz -C "${work_dir}" \
+    && install -m 0755 "${work_dir}/linux-${binary_arch}/helm" /usr/local/bin/helm \
+    && curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${binary_arch}" -o "${work_dir}/yq" \
+    && install -m 0755 "${work_dir}/yq" /usr/local/bin/yq \
+    && curl -fsSL "https://github.com/casey/just/releases/download/${JUST_VERSION}/just-${JUST_VERSION}-${just_arch}-unknown-linux-musl.tar.gz" \
+      | tar -xz -C "${work_dir}" just \
+    && install -m 0755 "${work_dir}/just" /usr/local/bin/just \
+    && rm -rf "${work_dir}"
+
+WORKDIR /workspace
+
