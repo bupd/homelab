@@ -22,11 +22,11 @@ agentless control plane does not create a Kubernetes Node object.
 - `reconcile.sh`: installs these files and moves Pods off `archbtw` safely.
 
 The script copies the server token into a root-only file. The token is never
-written to Git.
+written to the repository or OCI artifact.
 
 It installs the checked-in files as follows:
 
-| Git file | Host path |
+| Repository file | Host path |
 | --- | --- |
 | `../../k3s/config.yaml` | `/etc/rancher/k3s/config.yaml` |
 | `../../k3s/modules-load.conf` | `/etc/modules-load.d/k3s.conf` |
