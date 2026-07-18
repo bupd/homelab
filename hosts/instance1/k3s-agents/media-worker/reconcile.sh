@@ -15,7 +15,7 @@ readonly WORKER_NETWORK="${SCRIPT_DIR}/media-worker.network"
 readonly WORKER_CONTAINER="${SCRIPT_DIR}/media-worker.container"
 readonly WORKER_ENSURE_SERVICE="${SCRIPT_DIR}/media-worker-ensure.service"
 readonly WORKER_FSTAB="${SCRIPT_DIR}/media-worker.fstab"
-readonly WORKER_POLICY="${REPO_ROOT}/clusters/ins1/nodes/media-worker/node-policy.yaml"
+readonly WORKER_POLICY="${REPO_ROOT}/clusters/homelab/nodes/media-worker/node-policy.yaml"
 readonly KUBECTL=(k3s kubectl)
 
 log() {
