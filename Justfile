@@ -174,6 +174,11 @@ validate-sops:
     #!/usr/bin/env bash
     while IFS= read -r -d '' encrypted; do
       [[ "$(sops filestatus "${encrypted}" | jq -r .encrypted)" == true ]]
+      if [[ "$(yq -r '.kind // ""' "${encrypted}")" == Secret ]] \
+        && yq -e 'has("data")' "${encrypted}" >/dev/null; then
+        echo "SOPS Secret must use stringData, not data: ${encrypted}" >&2
+        exit 1
+      fi
     done < <(find clusters/homelab apps platform -type f \
       \( -name '*.sops.yaml' -o -name '*.sops.yml' \) -print0)
     if find . -type f \( -name '*.dec.yaml' -o -name '*.dec.yml' -o \
