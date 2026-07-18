@@ -86,7 +86,6 @@ server:
           readOnly: false
   controllers:
     main:
-      strategy: Recreate
       replicas: 1
       initContainers:
         storage-init:
@@ -153,7 +152,6 @@ machine-learning:
   enabled: true
   controllers:
     main:
-      strategy: Recreate
       containers:
         main:
           image:
