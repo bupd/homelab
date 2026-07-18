@@ -272,9 +272,9 @@ node policy
   -> kube-prometheus-stack
 ```
 
-Flux checks the public `latest` OCI artifact every two minutes. Future pushes
-to `main` are deployed automatically. Pushes to other branches publish an
-immutable artifact but do not move `latest`.
+Flux checks the public `latest` OCI artifact every two minutes. Every successful
+workflow publication creates an immutable commit tag and moves `latest`, so a
+push from any branch can update the desired state consumed by the cluster.
 
 After Prometheus, Grafana, and Tailscale have been verified, publish the media
 layer. This is the later command, not part of the initial rollout:

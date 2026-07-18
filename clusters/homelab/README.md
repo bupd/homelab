@@ -67,6 +67,5 @@ GHCR_USERNAME=bupd GHCR_TOKEN='<write-packages-token>' \
 
 GitHub Actions publishes an immutable commit-tagged artifact for every branch
 push. During the initial rollout it selects `platform/observability`, which
-includes the required cluster policy and Tailscale networking but no apps. Only
-a push to `main` moves the `latest` tag consumed by the cluster, so feature
-branches cannot deploy themselves accidentally.
+includes the required cluster policy and Tailscale networking but no apps. Every
+successful branch workflow also moves the `latest` tag consumed by the cluster.

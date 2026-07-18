@@ -58,7 +58,7 @@ jobs:
           OCI_SOURCE: https://github.com/${{ github.repository }}
           OCI_REVISION: ${{ github.ref_name }}@sha1:${{ github.sha }}
           OCI_TAG: ${{ github.sha }}
-          UPDATE_LATEST: ${{ github.ref == 'refs/heads/main' }}
+          UPDATE_LATEST: "true"
         # Initial rollout intentionally contains no applications. Change this
         # scope only after the observability platform has been verified.
         run: just push-artifact platform/observability
