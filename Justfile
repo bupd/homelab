@@ -24,61 +24,85 @@ ci-install-container-runtime:
 ci-image:
     {{container_runtime}} build -t "{{ci_image}}" -f tools/ci/Containerfile tools/ci
 
-# Open one SOPS file into ignored plaintext. Print no secret.
-decrypt file: ci-image
-    test -f {{quote(file)}}
+# Open every SOPS file into ignored plaintext. Refuse to overwrite edits.
+decrypt: ci-image
     test -f "{{sops_age_key}}"
     {{container_runtime}} run --rm \
       --env SOPS_AGE_KEY_FILE=/sops-age-key \
       -v "{{repo_dir}}:/workspace" \
       -v "{{sops_age_key}}:/sops-age-key:ro" \
       -w /workspace \
-      "{{ci_image}}" just _decrypt {{quote(file)}}
+      "{{ci_image}}" just _decrypt
 
 [private]
-_decrypt file:
+_decrypt:
     #!/usr/bin/env bash
-    input=$(realpath -e {{quote(file)}})
-    case "${input}" in /workspace/*) ;; *) echo "file must be inside repository" >&2; exit 2 ;; esac
-    case "${input}" in
-      *.sops.yaml) output=${input%.sops.yaml}.dec.yaml ;;
-      *.sops.yml) output=${input%.sops.yml}.dec.yml ;;
-      *) echo "expected a *.sops.yaml or *.sops.yml file" >&2; exit 2 ;;
-    esac
+    mapfile -d '' encrypted_files < <(find clusters apps platform -type f \
+      \( -name '*.sops.yaml' -o -name '*.sops.yml' \) -print0 | sort -z)
+    if (( ${#encrypted_files[@]} == 0 )); then
+      echo 'nothing to decrypt'
+      exit 0
+    fi
+    for input in "${encrypted_files[@]}"; do
+      case "${input}" in
+        *.sops.yaml) output=${input%.sops.yaml}.dec.yaml ;;
+        *.sops.yml) output=${input%.sops.yml}.dec.yml ;;
+      esac
+      if [[ -e "${output}" ]]; then
+        echo "refusing to overwrite existing ${output}" >&2
+        exit 2
+      fi
+    done
     umask 077
-    temporary=$(mktemp)
-    trap 'rm -f "${temporary}"' EXIT
-    sops decrypt --input-type yaml --output-type yaml "${input}" >"${temporary}"
-    install -m 0600 "${temporary}" "${output}"
-    printf 'decrypted: %s\n' "${output#/workspace/}"
+    for input in "${encrypted_files[@]}"; do
+      case "${input}" in
+        *.sops.yaml) output=${input%.sops.yaml}.dec.yaml ;;
+        *.sops.yml) output=${input%.sops.yml}.dec.yml ;;
+      esac
+      temporary=$(mktemp)
+      if ! sops decrypt --input-type yaml --output-type yaml "${input}" >"${temporary}"; then
+        rm -f "${temporary}"
+        exit 1
+      fi
+      install -m 0600 "${temporary}" "${output}"
+      rm -f "${temporary}"
+      printf 'decrypted: %s\n' "${output}"
+    done
 
-# Seal one ignored plaintext file, verify ciphertext, then remove plaintext.
-encrypt file: ci-image
-    test -f {{quote(file)}}
+# Seal every decrypted file, verify ciphertext, then remove plaintext.
+encrypt: ci-image
     {{container_runtime}} run --rm \
       -v "{{repo_dir}}:/workspace" \
       -w /workspace \
-      "{{ci_image}}" just _encrypt {{quote(file)}}
+      "{{ci_image}}" just _encrypt
 
 [private]
-_encrypt file:
+_encrypt:
     #!/usr/bin/env bash
-    input=$(realpath -e {{quote(file)}})
-    case "${input}" in /workspace/*) ;; *) echo "file must be inside repository" >&2; exit 2 ;; esac
-    case "${input}" in
-      *.dec.yaml) output=${input%.dec.yaml}.sops.yaml ;;
-      *.dec.yml) output=${input%.dec.yml}.sops.yml ;;
-      *) echo "expected a *.dec.yaml or *.dec.yml file" >&2; exit 2 ;;
-    esac
+    mapfile -d '' plaintext_files < <(find clusters apps platform -type f \
+      \( -name '*.dec.yaml' -o -name '*.dec.yml' \) -print0 | sort -z)
+    if (( ${#plaintext_files[@]} == 0 )); then
+      echo 'nothing to encrypt'
+      exit 0
+    fi
     umask 077
-    temporary=$(mktemp)
-    trap 'rm -f "${temporary}"' EXIT
-    sops encrypt --filename-override "${output}" --input-type yaml --output-type yaml \
-      "${input}" >"${temporary}"
-    install -m 0600 "${temporary}" "${output}"
-    test "$(sops filestatus "${output}" | jq -r .encrypted)" = true
-    rm -f "${input}"
-    printf 'encrypted: %s\n' "${output#/workspace/}"
+    for input in "${plaintext_files[@]}"; do
+      case "${input}" in
+        *.dec.yaml) output=${input%.dec.yaml}.sops.yaml ;;
+        *.dec.yml) output=${input%.dec.yml}.sops.yml ;;
+      esac
+      temporary=$(mktemp)
+      if ! sops encrypt --filename-override "${output}" --input-type yaml --output-type yaml \
+        "${input}" >"${temporary}"; then
+        rm -f "${temporary}"
+        exit 1
+      fi
+      install -m 0600 "${temporary}" "${output}"
+      rm -f "${temporary}"
+      test "$(sops filestatus "${output}" | jq -r .encrypted)" = true
+      rm -f "${input}"
+      printf 'encrypted: %s\n' "${output}"
+    done
 
 # Check all manifests and charts. Push nothing. Change no cluster.
 validate: ci-image
