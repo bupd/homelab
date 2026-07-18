@@ -11,5 +11,8 @@ spec:
   sourceRef:
     kind: OCIRepository
     name: homelab
-  timeout: 10m
-  wait: true
+  # This root only applies child Flux Kustomizations. Each child owns its own
+  # health checks and dependency ordering, so waiting here causes nested
+  # Helm-install timeouts to surface as a misleading root timeout.
+  timeout: 2m
+  wait: false
