@@ -165,7 +165,12 @@ cluster -> platform -> apps
 
 Selecting `cluster` contains cluster policy only. Selecting `platform` adds
 every platform component but no application. Selecting an app adds its required
-cluster and platform dependencies. With no scope, everything is selected.
+cluster and platform dependencies. With no scope, the enabled entries in
+`clusters/homelab/cluster/kustomization.yaml` are selected. The initial enabled
+graph contains nodes, networking, and observability only.
+Artifact scopes can narrow the enabled graph, but cannot bypass a commented-out
+entry. Uncomment the CloudNativePG and Immich lines in the cluster
+Kustomization before selecting `apps/media`.
 
 Build the first rollout artifact locally. This contains the node policy,
 Tailscale Operator, and kube-prometheus-stack, with no CloudNativePG or Immich:

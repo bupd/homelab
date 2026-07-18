@@ -106,7 +106,7 @@ validate-names:
       exit 1
     fi
 
-# Pack chosen layer into local OCI artifact. No scope means all. Push nothing.
+# Pack chosen layer into local OCI artifact. No scope means enabled graph. Push nothing.
 build-artifact *selection: ci-image
     {{container_runtime}} run --rm --network=host \
       --env ARTIFACT_OUTPUT=/workspace/dist/homelab-cluster.tgz \

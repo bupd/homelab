@@ -64,6 +64,7 @@ cluster_source=clusters/homelab/cluster
 cluster_destination="$destination/$cluster_source"
 declare -A files=()
 declare -A paths=()
+declare -A active=()
 declare -A selected=()
 declare -A excluded=()
 
@@ -83,6 +84,17 @@ for file in "$cluster_source"/*.yaml; do
   paths[$name]=$managed_path
 done
 
+while IFS= read -r resource; do
+  [[ -n "$resource" && "$resource" != null ]] || continue
+  resource_file="$cluster_source/$resource"
+  [[ -f "$resource_file" ]] || {
+    echo "cluster graph references missing resource: $resource" >&2
+    exit 1
+  }
+  name=$(yq eval '.metadata.name' "$resource_file")
+  active[$name]=1
+done < <(yq eval '.resources[]?' "$cluster_source/kustomization.yaml")
+
 for name in "${!files[@]}"; do
   for ignored in "${ignores[@]}"; do
     if path_intersects "${paths[$name]}" "$ignored"; then
@@ -90,7 +102,9 @@ for name in "${!files[@]}"; do
     fi
   done
 
-  if [[ -z "$scope" ]] || path_intersects "${paths[$name]}" "$scope"; then
+  if [[ -n ${active[$name]:-} ]] && {
+    [[ -z "$scope" ]] || path_intersects "${paths[$name]}" "$scope"
+  }; then
     [[ -n ${excluded[$name]:-} ]] || selected[$name]=1
   fi
 done
@@ -113,6 +127,10 @@ while [[ "$changed" == true ]]; do
         echo "$name depends on unknown cluster Kustomization $dependency" >&2
         exit 1
       }
+      if [[ -z ${active[$dependency]:-} ]]; then
+        echo "cannot include ${paths[$name]}: required ${paths[$dependency]} is disabled in the cluster graph" >&2
+        exit 2
+      fi
       if [[ -n ${excluded[$dependency]:-} ]]; then
         echo "cannot ignore ${paths[$dependency]}: it is required by ${paths[$name]}" >&2
         exit 2
