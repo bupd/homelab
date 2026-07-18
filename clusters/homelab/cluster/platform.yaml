@@ -4,6 +4,10 @@ metadata:
   name: platform
   namespace: flux-system
 spec:
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   dependsOn:
     - name: nodes
   interval: 2m

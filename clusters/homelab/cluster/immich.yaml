@@ -4,8 +4,13 @@ metadata:
   name: immich
   namespace: flux-system
 spec:
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   dependsOn:
     - name: immich-database
+    - name: networking
   interval: 2m
   path: ./apps/media/immich/app
   prune: true

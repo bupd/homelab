@@ -1,19 +1,21 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: nodes
+  name: networking
   namespace: flux-system
 spec:
   decryption:
     provider: sops
     secretRef:
       name: sops-age
+  dependsOn:
+    - name: nodes
   interval: 2m
-  path: ./clusters/homelab/nodes
+  path: ./platform/networking
   prune: true
   retryInterval: 30s
   sourceRef:
     kind: OCIRepository
     name: homelab
-  timeout: 5m
+  timeout: 15m
   wait: true

@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - nodes.yaml
   - platform.yaml
+  - networking.yaml
+  - observability.yaml
   - immich-database.yaml
   - immich.yaml
-
