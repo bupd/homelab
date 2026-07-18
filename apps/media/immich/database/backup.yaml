@@ -90,22 +90,22 @@ spec:
                 - name: PGHOST
                   valueFrom:
                     secretKeyRef:
-                      name: immich-database-immich
+                      name: immich-database-app
                       key: host
                 - name: PGUSER
                   valueFrom:
                     secretKeyRef:
-                      name: immich-database-immich
+                      name: immich-database-app
                       key: user
                 - name: PGPASSWORD
                   valueFrom:
                     secretKeyRef:
-                      name: immich-database-immich
+                      name: immich-database-app
                       key: password
                 - name: PGDATABASE
                   valueFrom:
                     secretKeyRef:
-                      name: immich-database-immich
+                      name: immich-database-app
                       key: dbname
               resources:
                 limits:
