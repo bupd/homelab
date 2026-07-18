@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - operator-oauth.sops.yaml
   - repository.yaml
   - release.yaml
 
