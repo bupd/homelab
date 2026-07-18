@@ -319,10 +319,27 @@ flux-status: ci-image
 
 [private]
 _flux-status:
+    #!/usr/bin/env bash
+    set -euo pipefail
     flux --context "{{kube_context}}" check
     flux --context "{{kube_context}}" get all -A
     kubectl --context "{{kube_context}}" get nodes,pods,pvc -A -o wide
-    kubectl --context "{{kube_context}}" get cluster,database -n immich
-    kubectl --context "{{kube_context}}" get prometheus,alertmanager -n observability
+    if kubectl --context "{{kube_context}}" get namespace immich >/dev/null 2>&1 \
+      && kubectl --context "{{kube_context}}" api-resources \
+        --api-group=postgresql.cnpg.io -o name | grep -qx clusters.postgresql.cnpg.io; then
+      kubectl --context "{{kube_context}}" get \
+        clusters.postgresql.cnpg.io,databases.postgresql.cnpg.io -n immich
+    else
+      echo 'skip Immich database status: layer or CloudNativePG CRDs not installed'
+    fi
+    if kubectl --context "{{kube_context}}" get namespace observability >/dev/null 2>&1 \
+      && kubectl --context "{{kube_context}}" api-resources \
+        --api-group=monitoring.coreos.com -o name | grep -qx prometheuses.monitoring.coreos.com; then
+      kubectl --context "{{kube_context}}" get \
+        prometheuses.monitoring.coreos.com,alertmanagers.monitoring.coreos.com \
+        -n observability
+    else
+      echo 'skip Prometheus status: observability layer or monitoring CRDs not installed'
+    fi
     kubectl --context "{{kube_context}}" get ingress -A
     kubectl --context "{{kube_context}}" get helmrelease,ocirepository -A
