@@ -6,7 +6,7 @@ model.
 
 ## Architecture
 
-The `ins1` cluster has one intentionally authoritative control plane and any
+The `homelab` cluster has one intentionally authoritative control plane and any
 number of agent-only workers.
 
 See [Homelab architecture and rollout plan](docs/architecture-plan.md) for the
@@ -27,10 +27,10 @@ worker capacity can be expanded without changing the control-plane topology.
 
 ```text
 clusters/
-  ins1/                    # Kubernetes objects reconciled for the ins1 cluster
+  homelab/
     nodes/                 # One declarative policy per registered node
 hosts/
-  instance1/
+  homelab/
     k3s/                   # Host bootstrap configuration installed under /etc
     k3s-agents/            # Isolated worker definitions and reconcilers
 experiments/               # Raspberry Pi and bootc experiments
@@ -41,15 +41,14 @@ Host configuration and cluster configuration are intentionally separate:
 
 - `hosts/` contains files required before Kubernetes and Flux can run, such as
   the K3s server configuration, kernel modules, and sysctl settings.
-- `clusters/` contains Kubernetes resources rendered by Kustomize and
-  eventually reconciled continuously by Flux.
+- `clusters/` contains cluster bootstrap, reconciliation, and Node policy.
 - Each application will be installed through a pinned Helm release declared in
   Git. Runtime edits are treated as drift rather than configuration.
 
 ## Current state
 
 - K3s `v1.36.2+k3s1` is running on `archbtw`.
-- The local kubeconfig context is named `ins1`.
+- The local kubeconfig context is named `homelab`.
 - CoreDNS, metrics-server, local-path-provisioner, Traefik, and ServiceLB are
   currently provided by the default K3s installation. Traefik and ServiceLB
   are transitional and are disabled in the declared host configuration.
@@ -86,10 +85,10 @@ The host reconciler joins `media-worker`, waits for it to become ready, and
 only then removes the embedded agent from `archbtw`:
 
 ```bash
-sudo hosts/instance1/k3s-agents/media-worker/reconcile.sh
+sudo hosts/homelab/k3s-agents/media-worker/reconcile.sh
 ```
 
-Do this before applying `clusters/ins1`; applying a Node policy before its
+Do this before reconciling `clusters/homelab`; applying a Node policy before its
 agent joins would create a phantom Node.
 
 ## Apply the current cluster configuration
@@ -98,19 +97,19 @@ Select the cluster kubeconfig:
 
 ```bash
 export KUBECONFIG="$HOME/.kube/k3s.kubeconfig.yaml"
-kubectl config use-context ins1
+kubectl config use-context homelab
 ```
 
 Preview the rendered resources:
 
 ```bash
-kubectl kustomize clusters/ins1
+kubectl kustomize clusters/homelab/nodes
 ```
 
 Apply them using server-side ownership compatible with Flux:
 
 ```bash
-kubectl apply --server-side -k clusters/ins1
+kubectl apply --server-side -k clusters/homelab/nodes
 ```
 
 Verify that the worker is the only Kubernetes Node:
@@ -129,8 +128,8 @@ Kubernetes manifest. Install the matching K3s agent on the new machine using
 After the agent registers:
 
 1. Confirm that the Node is `Ready` and record its exact Kubernetes name.
-2. Add `clusters/ins1/nodes/<node-name>/node-policy.yaml`.
-3. Reference the policy from `clusters/ins1/nodes/kustomization.yaml`.
+2. Add `clusters/homelab/nodes/<node-name>/node-policy.yaml`.
+3. Reference the policy from `clusters/homelab/nodes/kustomization.yaml`.
 4. Render and apply the cluster configuration.
 
 Never commit the K3s token, kubeconfig credentials, or unencrypted application

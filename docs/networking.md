@@ -2,7 +2,7 @@
 
 ## Policy
 
-The `ins1` cluster is private. Tailscale is the only remote access plane, and
+The `homelab` cluster is private. Tailscale is the only remote access plane, and
 no Kubernetes application is intentionally exposed to the public internet.
 
 The following are prohibited:
@@ -35,7 +35,7 @@ identities.
 | Tailscale MagicDNS | `archbtw.tail6c5ea9.ts.net` |
 
 The K3s API certificate declares both addresses and the MagicDNS name through
-`hosts/instance1/k3s/config.yaml`. Local agents register through
+`hosts/homelab/k3s/config.yaml`. Local agents register through
 `https://192.168.0.4:6443`; tailnet administrators use
 `https://archbtw.tail6c5ea9.ts.net:6443`.
 

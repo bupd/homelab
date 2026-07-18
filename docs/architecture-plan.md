@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build `ins1` as a private, declarative media and personal-services cluster. The
+Build `homelab` as a private, declarative media and personal-services cluster. The
 physical `archbtw` machine remains the authoritative K3s control plane and also
 hosts separately registered worker nodes for the storage- and compute-heavy
 media stack. Raspberry Pi workers provide lightweight network, security, and
@@ -212,7 +212,7 @@ single-node failure/recovery behavior is documented.
 The target layout is:
 
 ```text
-clusters/ins1/
+clusters/homelab/
   flux-system/                 # Generated Flux bootstrap manifests
   infrastructure/
     controllers/               # Operators and cluster-wide controllers
@@ -222,7 +222,7 @@ clusters/ins1/
     photos/                    # Immich and dependencies
     books/                     # LazyLibrarian and reader services
   nodes/                       # Labels and taints for registered nodes
-hosts/instance1/               # Host bootstrap, K3s, mounts, worker definitions
+hosts/homelab/                 # Host bootstrap, K3s, mounts, worker definitions
 docs/                          # Architecture, operations, recovery, decisions
 ```
 
