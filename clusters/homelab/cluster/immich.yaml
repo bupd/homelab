@@ -18,5 +18,8 @@ spec:
   sourceRef:
     kind: OCIRepository
     name: homelab
-  timeout: 15m
-  wait: true
+  # Immich is the terminal application boundary. Apply its HelmRelease and let
+  # helm-controller own health, retries, and remediation. Waiting here can hold
+  # an older values ConfigMap for the full Helm timeout after a failed install.
+  timeout: 2m
+  wait: false
