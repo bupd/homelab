@@ -11,14 +11,15 @@ encrypting only `data` and `stringData`. Flux decrypts the values in memory.
 To inspect or edit an existing encrypted file, create a local plaintext copy:
 
 ```bash
-just decrypt platform/observability/kube-prometheus-stack/grafana-admin.sops.yaml
+just decrypt
 ```
 
-This creates the gitignored `grafana-admin.dec.yaml` beside it without printing
-the values. Edit that file, then seal it again:
+This creates a gitignored `*.dec.yaml` sibling for every `*.sops.yaml` file
+without printing the values. It refuses to overwrite existing decrypted files.
+Edit whichever plaintext files need changing, then seal all of them again:
 
 ```bash
-just encrypt platform/observability/kube-prometheus-stack/grafana-admin.dec.yaml
+just encrypt
 ```
 
 Encryption atomically updates `grafana-admin.sops.yaml`, verifies that SOPS can
@@ -28,9 +29,9 @@ artifact builds fail while any `*.dec.yaml` or `*.plain.yaml` file remains.
 The Tailscale Operator OAuth credential follows the same workflow:
 
 ```bash
-just decrypt platform/networking/tailscale-operator/operator-oauth.sops.yaml
+just decrypt
 # Edit operator-oauth.dec.yaml and set stringData.client_id/client_secret.
-just encrypt platform/networking/tailscale-operator/operator-oauth.dec.yaml
+just encrypt
 ```
 
 Flux creates the resulting `tailscale/operator-oauth` Secret. No out-of-band

@@ -18,9 +18,9 @@ The OAuth credential is stored in the SOPS-encrypted
 `operator-oauth.sops.yaml` manifest. To set or rotate it:
 
 ```bash
-just decrypt platform/networking/tailscale-operator/operator-oauth.sops.yaml
+just decrypt
 # Edit operator-oauth.dec.yaml and replace client_id and client_secret.
-just encrypt platform/networking/tailscale-operator/operator-oauth.dec.yaml
+just encrypt
 just validate
 ```
 

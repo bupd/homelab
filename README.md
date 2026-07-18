@@ -253,15 +253,17 @@ choose **OAuth**, and match these scopes and tags:
 The repository contains an encrypted placeholder Secret. Decrypt it locally:
 
 ```bash
-just decrypt platform/networking/tailscale-operator/operator-oauth.sops.yaml
+just decrypt
 ```
 
-Edit `platform/networking/tailscale-operator/operator-oauth.dec.yaml` and replace
-both `REPLACE_ME` values with the generated client ID and client secret. Seal it
-again immediately:
+This decrypts every repository-managed Secret into a gitignored sibling
+`*.dec.yaml` file. Edit
+`platform/networking/tailscale-operator/operator-oauth.dec.yaml` and replace both
+`REPLACE_ME` values with the generated client ID and client secret. Seal all
+decrypted files again immediately:
 
 ```bash
-just encrypt platform/networking/tailscale-operator/operator-oauth.dec.yaml
+just encrypt
 just validate
 ```
 
