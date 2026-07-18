@@ -13,10 +13,12 @@ sops_age_key := env("SOPS_AGE_KEY_FILE", home_dir + "/.config/sops/age/keys.txt"
 default:
     @just --list
 
-# CI needs Podman. Install Podman in the GitHub Actions job container.
+# CI needs Podman. Install and verify it on the normal Actions runner VM.
 ci-install-container-runtime:
-    apt-get update
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates podman
+    sudo apt-get update
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates podman
+    podman version
+    podman info
 
 # Build tool box container. Change no cluster.
 ci-image:
