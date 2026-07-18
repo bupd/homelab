@@ -175,7 +175,7 @@ validate-sops:
     while IFS= read -r -d '' encrypted; do
       [[ "$(sops filestatus "${encrypted}" | jq -r .encrypted)" == true ]]
       if [[ "$(yq -r '.kind // ""' "${encrypted}")" == Secret ]] \
-        && yq -e 'has("data")' "${encrypted}" >/dev/null; then
+        && yq -e 'has("data")' "${encrypted}" >/dev/null 2>&1; then
         echo "SOPS Secret must use stringData, not data: ${encrypted}" >&2
         exit 1
       fi
