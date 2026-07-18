@@ -17,10 +17,8 @@ repository-level `platform/`.
 
 ## Publish the desired state
 
-Authenticate to GHCR before pushing. The package must be public for the
-current source declaration. If it is private, add a `secretRef` to
-`bootstrap/source.yaml` and create that pull Secret separately before
-bootstrapping.
+Authenticate to GHCR only when pushing. The package is public, so Flux pulls
+the desired-state artifact anonymously and checks `latest` every two minutes.
 
 ```bash
 desired_state_sha="$(find . -path './.git' -prune -o -type f -print0 \
@@ -40,15 +38,27 @@ cluster follows `latest`.
 
 ## Bootstrap later
 
-These commands are intentionally not run as part of preparing the manifests:
+The root `Justfile` is the supported interface for local users and CI. After an
+artifact has been published, install the cluster with:
 
 ```bash
-kubectl apply --server-side -k clusters/homelab/flux-system
-kubectl wait --for=condition=Available deployment \
-  -n flux-system --all --timeout=5m
-kubectl apply --server-side -k clusters/homelab/bootstrap
+just validate
+just flux-install
+just flux-bootstrap
+just flux-reconcile
+just flux-status
 ```
 
 After bootstrap, the `cluster` Flux `Kustomization` creates the remaining
 ordered reconcilers. Flux is installed once for the Kubernetes cluster, not
 once per worker.
+
+To publish manually instead of waiting for GitHub Actions:
+
+```bash
+GHCR_USERNAME=bupd GHCR_TOKEN='<write-packages-token>' just artifact-push
+```
+
+GitHub Actions publishes an immutable commit-tagged artifact for every branch
+push. Only a push to `main` moves the `latest` tag consumed by the cluster, so
+feature branches cannot deploy themselves accidentally.
