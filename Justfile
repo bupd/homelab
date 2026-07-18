@@ -24,6 +24,62 @@ ci-install-container-runtime:
 ci-image:
     {{container_runtime}} build -t "{{ci_image}}" -f tools/ci/Containerfile tools/ci
 
+# Open one SOPS file into ignored plaintext. Print no secret.
+decrypt file: ci-image
+    test -f {{quote(file)}}
+    test -f "{{sops_age_key}}"
+    {{container_runtime}} run --rm \
+      --env SOPS_AGE_KEY_FILE=/sops-age-key \
+      -v "{{repo_dir}}:/workspace" \
+      -v "{{sops_age_key}}:/sops-age-key:ro" \
+      -w /workspace \
+      "{{ci_image}}" just _decrypt {{quote(file)}}
+
+[private]
+_decrypt file:
+    #!/usr/bin/env bash
+    input=$(realpath -e {{quote(file)}})
+    case "${input}" in /workspace/*) ;; *) echo "file must be inside repository" >&2; exit 2 ;; esac
+    case "${input}" in
+      *.sops.yaml) output=${input%.sops.yaml}.dec.yaml ;;
+      *.sops.yml) output=${input%.sops.yml}.dec.yml ;;
+      *) echo "expected a *.sops.yaml or *.sops.yml file" >&2; exit 2 ;;
+    esac
+    umask 077
+    temporary=$(mktemp)
+    trap 'rm -f "${temporary}"' EXIT
+    sops decrypt --input-type yaml --output-type yaml "${input}" >"${temporary}"
+    install -m 0600 "${temporary}" "${output}"
+    printf 'decrypted: %s\n' "${output#/workspace/}"
+
+# Seal one ignored plaintext file, verify ciphertext, then remove plaintext.
+encrypt file: ci-image
+    test -f {{quote(file)}}
+    {{container_runtime}} run --rm \
+      -v "{{repo_dir}}:/workspace" \
+      -w /workspace \
+      "{{ci_image}}" just _encrypt {{quote(file)}}
+
+[private]
+_encrypt file:
+    #!/usr/bin/env bash
+    input=$(realpath -e {{quote(file)}})
+    case "${input}" in /workspace/*) ;; *) echo "file must be inside repository" >&2; exit 2 ;; esac
+    case "${input}" in
+      *.dec.yaml) output=${input%.dec.yaml}.sops.yaml ;;
+      *.dec.yml) output=${input%.dec.yml}.sops.yml ;;
+      *) echo "expected a *.dec.yaml or *.dec.yml file" >&2; exit 2 ;;
+    esac
+    umask 077
+    temporary=$(mktemp)
+    trap 'rm -f "${temporary}"' EXIT
+    sops encrypt --filename-override "${output}" --input-type yaml --output-type yaml \
+      "${input}" >"${temporary}"
+    install -m 0600 "${temporary}" "${output}"
+    test "$(sops filestatus "${output}" | jq -r .encrypted)" = true
+    rm -f "${input}"
+    printf 'encrypted: %s\n' "${output#/workspace/}"
+
 # Check all manifests and charts. Push nothing. Change no cluster.
 validate: ci-image
     {{container_runtime}} run --rm --network=host \
@@ -92,8 +148,16 @@ validate-yaml:
 # Check SOPS encryption. Hunt plaintext secrets.
 validate-sops:
     #!/usr/bin/env bash
-    encrypted=platform/observability/kube-prometheus-stack/grafana-admin.sops.yaml
-    [[ "$(sops filestatus "${encrypted}" | jq -r .encrypted)" == true ]]
+    while IFS= read -r -d '' encrypted; do
+      [[ "$(sops filestatus "${encrypted}" | jq -r .encrypted)" == true ]]
+    done < <(find clusters/homelab apps platform -type f \
+      \( -name '*.sops.yaml' -o -name '*.sops.yml' \) -print0)
+    if find . -type f \( -name '*.dec.yaml' -o -name '*.dec.yml' -o \
+      -name '*.plain.yaml' -o -name '*.plain.yml' \) -not -path './.git/*' -print -quit \
+      | grep -q .; then
+      echo 'plaintext secret file exists; run just encrypt before building' >&2
+      exit 1
+    fi
     if rg -n 'AGE-SECRET-KEY-|client_secret: tskey-|admin-password: [^E]' \
       . -g '!**/.git/**' -g '!*.md' -g '!Justfile'; then
       echo 'possible plaintext secret found' >&2
