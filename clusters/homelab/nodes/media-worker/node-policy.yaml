@@ -3,8 +3,7 @@ kind: Node
 metadata:
   name: media-worker
   labels:
-    homelab.bupd.dev/node-class: worker
-    homelab.bupd.dev/workload-pool: media
-    homelab.bupd.dev/storage: media
-    homelab.bupd.dev/accelerator: nvidia
-
+    homelab.bupd.xyz/node-class: worker
+    homelab.bupd.xyz/workload-pool: media
+    homelab.bupd.xyz/storage: media
+    homelab.bupd.xyz/accelerator: nvidia

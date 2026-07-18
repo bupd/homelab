@@ -26,7 +26,7 @@ spec:
   values:
     affinity: {}
     nodeSelector:
-      homelab.bupd.dev/workload-pool: media
+      homelab.bupd.xyz/workload-pool: media
     replicaCount: 1
     resources:
       limits:

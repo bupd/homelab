@@ -83,9 +83,9 @@ succeed.
 Suggested label contract for the future workers:
 
 ```text
-homelab.bupd.dev/node-class=media-worker
-homelab.bupd.dev/storage=media
-homelab.bupd.dev/accelerator=<none|intel|amd|nvidia>
+homelab.bupd.xyz/node-class=media-worker
+homelab.bupd.xyz/storage=media
+homelab.bupd.xyz/accelerator=<none|intel|amd|nvidia>
 ```
 
 Actual node names and accelerator labels are added only after the nodes have

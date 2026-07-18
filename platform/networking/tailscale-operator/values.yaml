@@ -11,7 +11,7 @@ operatorConfig:
     - tag:k8s-operator
   hostname: homelab-k8s-operator
   nodeSelector:
-    homelab.bupd.dev/workload-pool: media
+    homelab.bupd.xyz/workload-pool: media
   resources:
     limits:
       memory: 256Mi

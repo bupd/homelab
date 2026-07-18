@@ -6,7 +6,7 @@
 
 defaultPodOptions:
   nodeSelector:
-    homelab.bupd.dev/workload-pool: media
+    homelab.bupd.xyz/workload-pool: media
 
 controllers:
   main:

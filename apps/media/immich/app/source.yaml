@@ -4,7 +4,7 @@ metadata:
   name: immich-chart
   namespace: immich
   annotations:
-    homelab.bupd.dev/chart-version: 0.13.1
+    homelab.bupd.xyz/chart-version: 0.13.1
 spec:
   interval: 2m
   layerSelector:
