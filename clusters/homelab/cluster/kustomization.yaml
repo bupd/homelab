@@ -2,4 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - media-worker/node-policy.yaml
+  - nodes.yaml
+  - platform.yaml
+  - immich-database.yaml
+  - immich.yaml
+

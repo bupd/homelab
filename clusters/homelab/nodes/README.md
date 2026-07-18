@@ -11,3 +11,4 @@ then apply its checked-in policy.
 
 Agentless control planes never get a Node policy because they do not register
 a Kubernetes Node object.
+

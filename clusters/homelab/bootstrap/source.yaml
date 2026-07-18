@@ -1,0 +1,13 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: homelab
+  namespace: flux-system
+spec:
+  interval: 5m
+  provider: generic
+  ref:
+    tag: latest
+  timeout: 2m
+  url: oci://ghcr.io/bupd/homelab/cluster
+

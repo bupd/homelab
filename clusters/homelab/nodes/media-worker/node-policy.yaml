@@ -7,3 +7,4 @@ metadata:
     homelab.bupd.dev/workload-pool: media
     homelab.bupd.dev/storage: media
     homelab.bupd.dev/accelerator: nvidia
+
