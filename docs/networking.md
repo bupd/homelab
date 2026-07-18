@@ -45,8 +45,8 @@ its loopback server URL with the MagicDNS API URL.
 
 ## Application ingress
 
-Applications do not share the control-plane Tailscale address. Flux will
-install the Tailscale Kubernetes Operator from its Helm chart. Each HTTP
+Applications do not share the control-plane Tailscale address. Flux installs
+the Tailscale Kubernetes Operator from its pinned Helm chart. Each HTTP
 application will declare an `Ingress` with `ingressClassName: tailscale`, and
 the operator will provision a tailnet-only MagicDNS name and TLS certificate.
 
@@ -118,9 +118,26 @@ allowed.
    then makes the control plane agentless and restarts both sides safely.
 3. Confirm that `media-worker` is the only Ready Kubernetes Node.
 4. Bootstrap Flux.
-5. Install the Tailscale Kubernetes Operator through a pinned Helm release and
-   a SOPS-encrypted OAuth Secret.
+5. Create the operator's in-cluster OAuth bootstrap Secret, then let Flux
+   install the Tailscale Kubernetes Operator through its pinned Helm release.
 6. Expose each application with a tailnet-only Tailscale Ingress.
 
 Until steps 1-5 are complete, application deployment must remain blocked: the
 control plane is tainted, and there is no approved private ingress path.
+
+## Custom-domain alternative
+
+The native and preferred names are `immich.tail6c5ea9.ts.net`,
+`grafana.tail6c5ea9.ts.net`, and `prometheus.tail6c5ea9.ts.net`. Tailscale owns
+MagicDNS and automatically obtains valid certificates for these names.
+
+A private custom name such as `immich.homelab.bupd.xyz` is also possible, but
+it requires more platform components: a private or split-horizon DNS resolver,
+a Gateway API implementation, and cert-manager. A public CA certificate can be
+obtained with a DNS-01 challenge without exposing the service or opening a
+public port. A private cert-manager CA also works, but every phone, browser, and
+TV must trust that CA or it will show certificate errors.
+
+DNS controls name resolution; it does not make the service public by itself.
+The Gateway or backend must remain reachable only through Tailscale addresses,
+and Funnel, router port forwards, and public load balancers remain prohibited.

@@ -26,6 +26,7 @@ flowchart TB
         subgraph workers["archbtw worker node(s)"]
             flux["Flux controllers"]
             ingress["Tailscale Operator proxies"]
+            observe["Prometheus · Grafana<br/>Alertmanager · exporters"]
             photos["Immich"]
             consume["Jellyfin · Navidrome<br/>Kavita / BookLore"]
             acquire["Sonarr · Radarr · Lidarr<br/>Prowlarr · Bazarr · LazyLibrarian"]
@@ -43,6 +44,7 @@ flowchart TB
     oci["GHCR OCI artifact"] -->|"desired state"| flux
     flux -->|"Kustomize + Helm via API"| cp
     cp -.->|"schedules"| workers
+    workers -->|"cluster and node metrics"| observe
 
     user --> ts --> ingress
     ingress --> photos
@@ -98,6 +100,8 @@ as an external URL.
 | Purpose | Identity |
 | --- | --- |
 | Kubernetes API | `https://archbtw.tail6c5ea9.ts.net:6443` |
+| Grafana dashboards | `https://grafana.tail6c5ea9.ts.net` |
+| Prometheus UI | `https://prometheus.tail6c5ea9.ts.net` |
 | Photos | `https://immich.tail6c5ea9.ts.net` |
 | Video, anime, and live TV | `https://jellyfin.tail6c5ea9.ts.net` |
 | Music | `https://navidrome.tail6c5ea9.ts.net` |
@@ -216,6 +220,8 @@ apps/
     jellyfin/                  # Jellyfin and related application config
 platform/
   controllers/                 # Shared operators such as CloudNativePG
+  networking/                  # Tailscale Operator and private ingress
+  observability/               # Cluster-wide Prometheus and Grafana stack
 hosts/homelab/                 # Host bootstrap, K3s, mounts, worker definitions
 docs/                          # Architecture, operations, recovery, decisions
 ```
