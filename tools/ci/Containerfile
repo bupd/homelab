@@ -4,6 +4,7 @@ ARG FLUX_VERSION=2.9.2
 ARG HELM_VERSION=4.2.2
 ARG JUST_VERSION=1.56.0
 ARG KUBECTL_VERSION=1.36.2
+ARG SOPS_VERSION=3.13.2
 ARG YQ_VERSION=4.53.3
 
 RUN apt-get update \
@@ -22,6 +23,8 @@ RUN apt-get update \
     && install -m 0755 "${work_dir}/flux" /usr/local/bin/flux \
     && curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/${binary_arch}/kubectl" -o "${work_dir}/kubectl" \
     && install -m 0755 "${work_dir}/kubectl" /usr/local/bin/kubectl \
+    && curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${binary_arch}" -o "${work_dir}/sops" \
+    && install -m 0755 "${work_dir}/sops" /usr/local/bin/sops \
     && curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${binary_arch}.tar.gz" \
       | tar -xz -C "${work_dir}" \
     && install -m 0755 "${work_dir}/linux-${binary_arch}/helm" /usr/local/bin/helm \
@@ -33,4 +36,3 @@ RUN apt-get update \
     && rm -rf "${work_dir}"
 
 WORKDIR /workspace
-
