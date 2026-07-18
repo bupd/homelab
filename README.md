@@ -167,16 +167,15 @@ Selecting `cluster` contains cluster policy only. Selecting `platform` adds
 every platform component but no application. Selecting an app adds its required
 cluster and platform dependencies. With no scope, the enabled entries in
 `clusters/homelab/cluster/kustomization.yaml` are selected. The initial enabled
-graph contains nodes, networking, and observability only.
+graph is controlled entirely by that Kustomization.
 Artifact scopes can narrow the enabled graph, but cannot bypass a commented-out
 entry. Uncomment the CloudNativePG and Immich lines in the cluster
 Kustomization before selecting `apps/media`.
 
-Build the first rollout artifact locally. This contains the node policy,
-Tailscale Operator, and kube-prometheus-stack, with no CloudNativePG or Immich:
+Build the complete currently enabled graph locally:
 
 ```bash
-just build-artifact platform/observability
+just build-artifact
 ```
 
 The result is `dist/homelab-cluster.tgz`. Building does not push anything and
@@ -194,20 +193,20 @@ just build-artifact
 An explicit ignore cannot remove a dependency required by the selected scope;
 the build fails instead of producing a broken Flux graph.
 
-Push the initial observability artifact manually:
+Push the complete currently enabled graph manually:
 
 ```bash
 GHCR_USERNAME=bupd \
 GHCR_TOKEN='<GitHub token with write:packages>' \
-just push-artifact platform/observability
+just push-artifact
 ```
 
 This publishes an immutable revision and moves the public `latest` tag consumed
 by Flux. Pushing the artifact does not install or bootstrap Flux by itself.
 
-The GitHub Actions workflow uses the same
-`just push-artifact platform/observability` command during this first rollout
-phase. It intentionally publishes no apps. Push or merge the repository branch:
+The GitHub Actions workflow uses the same no-scope `just push-artifact` command,
+so the published artifact always matches the enabled root graph. Push or merge
+the repository branch:
 
 ```bash
 git push origin HEAD
@@ -272,7 +271,7 @@ The plaintext copy is removed after encryption. Flux decrypts and creates
 manual `kubectl create secret` command is needed. The Grafana administrator
 Secret works the same way. See [Secrets with SOPS and Age](docs/secrets.md).
 
-### 8. Point Flux at the initial platform artifact
+### 8. Point Flux at the cluster artifact
 
 ```bash
 just flux-bootstrap
@@ -280,20 +279,22 @@ just flux-reconcile
 just flux-status
 ```
 
-The initial `platform/observability` artifact starts only this dependency chain:
+The currently enabled graph follows this dependency chain:
 
 ```text
 node policy
   -> Tailscale Operator
   -> kube-prometheus-stack
+  -> CloudNativePG operator
+  -> Immich database
+  -> Immich
 ```
 
 Flux checks the public `latest` OCI artifact every two minutes. Every successful
 workflow publication creates an immutable commit tag and moves `latest`, so a
 push from any branch can update the desired state consumed by the cluster.
 
-After Prometheus, Grafana, and Tailscale have been verified, publish the media
-layer. This is the later command, not part of the initial rollout:
+To publish only the media layer and its required dependencies manually:
 
 ```bash
 GHCR_USERNAME=bupd \

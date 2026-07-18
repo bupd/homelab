@@ -63,10 +63,10 @@ To publish manually instead of waiting for GitHub Actions:
 
 ```bash
 GHCR_USERNAME=bupd GHCR_TOKEN='<write-packages-token>' \
-  just push-artifact platform/observability
+  just push-artifact
 ```
 
 GitHub Actions publishes an immutable commit-tagged artifact for every branch
-push. During the initial rollout it selects `platform/observability`, which
-includes the required cluster policy and Tailscale networking but no apps. Every
-successful branch workflow also moves the `latest` tag consumed by the cluster.
+push. With no scope, it publishes exactly the graph enabled by
+`clusters/homelab/cluster/kustomization.yaml`. Every successful branch workflow
+also moves the `latest` tag consumed by the cluster.
