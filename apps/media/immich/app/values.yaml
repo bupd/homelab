@@ -1,6 +1,8 @@
 ## This is the complete values file shipped with the Immich chart at version
 ## 0.13.1, with homelab overrides kept in place. The chart relies on the bjw-s
 ## common library chart 5.0.1 for additional supported top-level values.
+## The chart appVersion is v3.0.0; image tags below deliberately pin Immich
+## v3.0.3 until a newer chart release incorporates it.
 
 # These entries are shared between all the Immich components.
 
@@ -13,7 +15,7 @@ controllers:
     containers:
       main:
         image:
-          tag: v3.0.0
+          tag: v3.0.3
         env:
           REDIS_HOSTNAME: '{{ printf "%s-valkey" .Release.Name }}'
           IMMICH_MACHINE_LEARNING_URL: '{{ printf "http://%s-machine-learning:3003" .Release.Name }}'
@@ -87,7 +89,7 @@ server:
         storage-init:
           image:
             repository: ghcr.io/immich-app/immich-server
-            tag: v3.0.0
+            tag: v3.0.3
             pullPolicy: IfNotPresent
           command:
             - /bin/sh
