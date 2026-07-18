@@ -37,5 +37,5 @@ spec:
       cpu: 500m
       memory: 1Gi
   storage:
-    size: 50Gi
+    size: 10Gi
     storageClass: local-path
