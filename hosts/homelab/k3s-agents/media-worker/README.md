@@ -68,6 +68,7 @@ The worker receives:
 - the host kernel modules;
 - all NVIDIA devices through CDI; and
 - the host glibc runtime files needed by the injected NVIDIA tools; and
+- persistent GPU Operator toolkit files under `/var/lib/nvidia/k3s-toolkit`; and
 - persistent K3s state under `/var/lib/rancher/k3s-media-worker`.
 
 The media disk is NTFS. Put bulk photos, videos, and downloads there. Do not
@@ -76,6 +77,7 @@ put databases there. Put databases and application configuration on ext4.
 The K3s image is intentionally tiny, so the Quadlet read-only mounts the small
 set of host glibc runtime files required by CDI-injected NVIDIA tools. This lets
 GPU Operator validate the pre-installed host driver without installing another
-driver inside the worker. Kubernetes Pods still request the GPU through the
-declaratively installed NVIDIA GPU Operator/device plugin and
-`nvidia.com/gpu`.
+driver inside the worker. The NVIDIA runtime binary and K3s containerd drop-in
+survive worker restarts; K3s imports the drop-in from its persistent agent state
+when it starts. Kubernetes Pods request the GPU through the declaratively
+installed NVIDIA GPU Operator/device plugin and `nvidia.com/gpu`.

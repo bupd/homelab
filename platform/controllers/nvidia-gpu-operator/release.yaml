@@ -39,6 +39,11 @@ spec:
           value: /run/k3s/containerd/containerd.sock
         - name: RUNTIME_CONFIG_SOURCE
           value: file
+        # K3s imports this persistent directory on every containerd start.
+        # The worker Quadlet separately persists /usr/local/nvidia, which holds
+        # the runtime binary referenced by this drop-in.
+        - name: RUNTIME_DROP_IN_CONFIG_HOST_PATH
+          value: /var/lib/rancher/k3s/agent/etc/containerd/config-v3.toml.d/99-nvidia.toml
         - name: CONTAINERD_RUNTIME_CLASS
           value: nvidia
         - name: CONTAINERD_SET_AS_DEFAULT

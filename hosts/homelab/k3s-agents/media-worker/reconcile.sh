@@ -212,6 +212,7 @@ install -d -m 0755 \
   /var/lib/rancher/k3s-media-worker \
   /var/lib/rancher/k3s-media-worker-kubelet \
   /var/lib/rancher/k3s-media-worker-cni \
+  /var/lib/nvidia/k3s-toolkit \
   /var/log/k3s-media-worker \
   /etc/containers/systemd \
   /etc/cdi \
