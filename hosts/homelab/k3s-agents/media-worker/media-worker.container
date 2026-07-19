@@ -10,8 +10,6 @@ Image=docker.io/rancher/k3s:v1.36.2-k3s1
 Pull=never
 ContainerName=media-worker
 HostName=media-worker
-Environment=PATH=/usr/local/nvidia/toolkit:/var/lib/rancher/k3s/data/cni:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/bin/aux
-Environment=LD_LIBRARY_PATH=/usr/local/nvidia/host-libs
 
 Network=media-worker.network
 IP=10.89.0.2
@@ -28,9 +26,7 @@ Volume=/var/lib/rancher/k3s-media-worker:/var/lib/rancher/k3s
 Volume=/var/lib/rancher/k3s-media-worker-kubelet:/var/lib/kubelet:rshared
 Volume=/var/lib/rancher/k3s-media-worker-cni:/var/lib/cni
 Volume=/var/log/k3s-media-worker:/var/log
-Volume=/var/lib/nvidia/k3s-toolkit:/usr/local/nvidia
 Volume=/var/lib/nvidia/k3s-run:/run/nvidia:rshared
-Volume=/usr/lib:/usr/local/nvidia/host-libs:ro
 Volume=/home/bupd/hdd/data:/home/bupd/hdd/data:rw
 Volume=/lib/modules:/lib/modules:ro
 Volume=/etc/cdi:/etc/cdi:ro

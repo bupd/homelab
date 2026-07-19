@@ -67,9 +67,7 @@ The worker receives:
 - `/home/bupd/hdd/data` at the same path, read-write;
 - the host kernel modules;
 - all NVIDIA devices through CDI; and
-- host libraries at the isolated, read-only `/usr/local/nvidia/host-libs`
-  compatibility path for the injected NVIDIA tools; and
-- persistent GPU Operator toolkit files under `/var/lib/nvidia/k3s-toolkit`; and
+- the host NVIDIA Container Toolkit binaries and configuration, read-only; and
 - persistent, shared-mount GPU Operator validation state under
   `/var/lib/nvidia/k3s-run`; and
 - persistent K3s state under `/var/lib/rancher/k3s-media-worker`.
@@ -78,14 +76,11 @@ The media disk is NTFS. Put bulk photos, videos, and downloads there. Do not
 put databases there. Put databases and application configuration on ext4.
 
 The K3s image is intentionally tiny, so the Quadlet supplies the host glibc
-loader plus an isolated, read-only host-library path required by CDI-injected
-NVIDIA tools. The NVIDIA runtime's OCI hooks do not inherit that library path,
-so their required SONAMEs are additionally mounted read-only at the standard
-paths they expect, along with the host's statically linked `ldconfig`. This lets
-GPU Operator validate the pre-installed host driver without installing another
-driver inside the worker. The Quadlet mounts the host's NVIDIA Container Toolkit
-binaries and configuration read-only, and K3s auto-detects that runtime at
-startup. GPU Operator's toolkit DaemonSet stays disabled because reloading the
-inner containerd terminates the all-in-one nested K3s agent. GPU Operator still
-owns discovery, validation, time slicing, and DCGM metrics. Kubernetes Pods
-request the GPU through its device plugin and `nvidia.com/gpu`.
+loader and the NVIDIA runtime's required SONAMEs at their standard paths, along
+with the host's statically linked `ldconfig`. The Quadlet also mounts the host's
+NVIDIA Container Toolkit binaries and configuration read-only, and K3s
+auto-detects `/usr/bin/nvidia-container-runtime` at startup. GPU Operator's
+toolkit DaemonSet stays disabled because reloading the inner containerd
+terminates the all-in-one containerized K3s agent. GPU Operator still owns
+discovery, validation, time slicing, and DCGM metrics. Kubernetes Pods request
+the GPU through its device plugin and `nvidia.com/gpu`.
