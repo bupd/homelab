@@ -3,6 +3,7 @@ kind: Node
 metadata:
   name: media-worker
   labels:
+    gpu: "on"
     homelab.bupd.xyz/node-class: worker
     homelab.bupd.xyz/workload-pool: media
     homelab.bupd.xyz/storage: media
