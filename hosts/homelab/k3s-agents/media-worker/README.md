@@ -83,9 +83,9 @@ NVIDIA tools. The NVIDIA runtime's OCI hooks do not inherit that library path,
 so their required SONAMEs are additionally mounted read-only at the standard
 paths they expect, along with the host's statically linked `ldconfig`. This lets
 GPU Operator validate the pre-installed host driver without installing another
-driver inside the worker. The NVIDIA runtime binary, validation markers, and
-K3s containerd drop-in survive worker restarts; this prevents GPU Operator from
-treating every nested-worker restart as a fresh runtime installation. K3s
-imports the drop-in from its persistent agent state when it starts. Kubernetes
-Pods request the GPU through the declaratively installed NVIDIA GPU
-Operator/device plugin and `nvidia.com/gpu`.
+driver inside the worker. The Quadlet mounts the host's NVIDIA Container Toolkit
+binaries and configuration read-only, and K3s auto-detects that runtime at
+startup. GPU Operator's toolkit DaemonSet stays disabled because reloading the
+inner containerd terminates the all-in-one nested K3s agent. GPU Operator still
+owns discovery, validation, time slicing, and DCGM metrics. Kubernetes Pods
+request the GPU through its device plugin and `nvidia.com/gpu`.

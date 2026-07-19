@@ -285,6 +285,13 @@ for glibc_file in \
   /usr/lib/libcom_err.so.2 \
   /usr/lib/libkrb5support.so.0 \
   /usr/lib/libkeyutils.so.1 \
+  /usr/bin/nvidia-container-runtime \
+  /usr/bin/nvidia-container-runtime-hook \
+  /usr/bin/nvidia-container-cli \
+  /usr/bin/nvidia-ctk \
+  /usr/lib/libnvidia-container.so.1 \
+  /usr/lib/libnvidia-container-go.so.1 \
+  /etc/nvidia-container-runtime/config.toml \
   /sbin/ldconfig; do
   [[ -r ${glibc_file} ]] || \
     die "required NVIDIA compatibility runtime file is unavailable: ${glibc_file}"

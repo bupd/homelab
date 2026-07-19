@@ -57,6 +57,16 @@ Volume=/usr/lib/libcom_err.so.2:/usr/lib/libcom_err.so.2:ro
 Volume=/usr/lib/libkrb5support.so.0:/usr/lib/libkrb5support.so.0:ro
 Volume=/usr/lib/libkeyutils.so.1:/usr/lib/libkeyutils.so.1:ro
 Volume=/sbin/ldconfig:/sbin/ldconfig:ro
+# Nested K3s uses the host's already-installed NVIDIA Container Toolkit. This
+# avoids the GPU Operator toolkit DaemonSet reloading containerd and thereby
+# terminating the all-in-one K3s agent process.
+Volume=/usr/bin/nvidia-container-runtime:/usr/bin/nvidia-container-runtime:ro
+Volume=/usr/bin/nvidia-container-runtime-hook:/usr/bin/nvidia-container-runtime-hook:ro
+Volume=/usr/bin/nvidia-container-cli:/usr/bin/nvidia-container-cli:ro
+Volume=/usr/bin/nvidia-ctk:/usr/bin/nvidia-ctk:ro
+Volume=/usr/lib/libnvidia-container.so.1:/usr/lib/libnvidia-container.so.1:ro
+Volume=/usr/lib/libnvidia-container-go.so.1:/usr/lib/libnvidia-container-go.so.1:ro
+Volume=/etc/nvidia-container-runtime:/etc/nvidia-container-runtime:ro
 
 Exec=agent
 

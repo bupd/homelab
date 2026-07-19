@@ -24,30 +24,17 @@ spec:
       remediateLastFailure: true
       retries: 3
   values:
-    # Podman CDI already passes the physical GPU and host driver into the
-    # nested media-worker. The operator must configure K3s's inner containerd.
+    # Podman CDI passes the physical GPU and host driver into the nested
+    # media-worker. The worker Quadlet also mounts the host's NVIDIA Container
+    # Toolkit binaries, so K3s auto-detects the runtime at startup. Running the
+    # operator toolkit DaemonSet here would SIGHUP nested containerd, which
+    # causes the all-in-one K3s agent process to exit.
     driver:
       enabled: false
     cdi:
       enabled: false
     toolkit:
-      enabled: true
-      env:
-        - name: CONTAINERD_CONFIG
-          value: /var/lib/rancher/k3s/agent/etc/containerd/config.toml
-        - name: CONTAINERD_SOCKET
-          value: /run/k3s/containerd/containerd.sock
-        - name: RUNTIME_CONFIG_SOURCE
-          value: file
-        # K3s imports this persistent directory on every containerd start.
-        # The worker Quadlet separately persists /usr/local/nvidia, which holds
-        # the runtime binary referenced by this drop-in.
-        - name: RUNTIME_DROP_IN_CONFIG_HOST_PATH
-          value: /var/lib/rancher/k3s/agent/etc/containerd/config-v3.toml.d/99-nvidia.toml
-        - name: CONTAINERD_RUNTIME_CLASS
-          value: nvidia
-        - name: CONTAINERD_SET_AS_DEFAULT
-          value: "false"
+      enabled: false
     mig:
       strategy: none
     migManager:
