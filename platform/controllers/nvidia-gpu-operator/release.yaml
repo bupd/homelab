@@ -12,6 +12,8 @@ spec:
         kind: HelmRepository
         name: nvidia
       version: v26.3.3
+  driftDetection:
+    mode: enabled
   install:
     crds: Create
     remediation:

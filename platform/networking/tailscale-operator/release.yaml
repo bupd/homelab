@@ -12,6 +12,8 @@ spec:
         kind: HelmRepository
         name: tailscale
       version: 1.98.9
+  driftDetection:
+    mode: enabled
   install:
     remediation:
       retries: 3
