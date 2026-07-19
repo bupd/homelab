@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: immich-prasanth
+  labels:
+    app.kubernetes.io/name: immich
+    app.kubernetes.io/component: external-library
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 1Ti
+  hostPath:
+    path: /home/bupd/hdd/data/Prasanth
+    type: Directory
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - media-worker
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: immich-prasanth
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-prasanth
+  namespace: immich
+  labels:
+    app.kubernetes.io/name: immich
+    app.kubernetes.io/component: external-library
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Ti
+  storageClassName: immich-prasanth
+  volumeMode: Filesystem
+  volumeName: immich-prasanth

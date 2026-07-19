@@ -4,6 +4,8 @@ kind: Kustomization
 resources:
   - external-library-storage.yaml
   - library-storage.yaml
+  - mobile-booky-storage.yaml
+  - prasanth-storage.yaml
   - source.yaml
   - release.yaml
   - ingress.yaml

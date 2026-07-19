@@ -609,10 +609,10 @@
               <article class="setting-card">
                 <div class="setting-card__top">
                   <div><h3 class="setting-card__title">Video transcoding</h3><code class="setting-card__key">immich.configuration.ffmpeg.transcode</code></div>
-                  <span class="pill pill--off">disabled</span>
+                  <span class="pill pill--on">required</span>
                 </div>
-                <p class="setting-card__body">Immich will not create converted video or audio streams, saving CPU, GPU time, and encoded-video storage.</p>
-                <p class="setting-card__outcome"><strong>Trade-off:</strong> source formats unsupported by a browser or client may not play, and high-bitrate originals use more network bandwidth.</p>
+                <p class="setting-card__body">Immich transcodes only video or audio streams that are incompatible with its accepted formats, including unsupported codecs, HDR, or incompatible pixel formats.</p>
+                <p class="setting-card__outcome"><strong>Outcome:</strong> compatible originals avoid conversion; incompatible media gets a broadly playable encoded copy at the cost of compute and storage.</p>
               </article>
               <article class="setting-card">
                 <div class="setting-card__top">
@@ -620,7 +620,7 @@
                   <span class="pill pill--on">nvenc / true</span>
                 </div>
                 <p class="setting-card__body">NVIDIA encode and hardware decode are configured, and the server uses the <code>nvidia</code> runtime class.</p>
-                <p class="setting-card__outcome"><strong>Current outcome:</strong> effectively dormant because transcoding is disabled. If transcoding is re-enabled, video work uses the RTX 3060.</p>
+                <p class="setting-card__outcome"><strong>Current outcome:</strong> required transcodes use the RTX 3060 for hardware-accelerated encoding and decoding.</p>
               </article>
               <article class="setting-card">
                 <div class="setting-card__top">
@@ -659,26 +659,28 @@
 
           <section class="section" id="storage">
             <p class="section__kicker">05 / Storage</p>
-            <h2 class="section__title">Two HDD-backed libraries, two local caches</h2>
+            <h2 class="section__title">Four HDD-backed library mounts and local state</h2>
             <p class="section__intro">The declared 1 TiB PV sizes are Kubernetes capacity metadata. They do not reserve 1 TiB; actual free space is determined by the host filesystem.</p>
             <div class="flow" aria-label="Immich storage topology">
               <div class="flow__node"><p class="flow__label">Host HDD</p><h3 class="flow__title">/home/bupd/hdd/data</h3><p class="flow__text">Physical media filesystem on media-worker.</p></div>
-              <div class="flow__node"><p class="flow__label">Persistent volumes</p><h3 class="flow__title">Managed + external</h3><p class="flow__text">Static hostPath PVs with Retain policy.</p></div>
-              <div class="flow__node"><p class="flow__label">Immich container</p><h3 class="flow__title">/data + /mnt/photos</h3><p class="flow__text">Uploads and existing personal media are kept separate.</p></div>
+              <div class="flow__node"><p class="flow__label">Persistent volumes</p><h3 class="flow__title">Managed + 3 external</h3><p class="flow__text">Static hostPath PVs with Retain policy.</p></div>
+              <div class="flow__node"><p class="flow__label">Immich container</p><h3 class="flow__title">/data + 3 mounts</h3><p class="flow__text">Uploads and all external media trees stay separate.</p></div>
             </div>
             <table class="data-table">
               <thead><tr><th>Purpose</th><th>Host path / storage</th><th>Container use</th><th>Effect</th></tr></thead>
               <tbody>
                 <tr><td>Managed library</td><td><code>/home/bupd/hdd/data/immich/library</code></td><td>Immich <code>/data</code> library claim</td><td>New uploads, thumbnails, profiles, and generated files live on the HDD.</td></tr>
                 <tr><td>External library</td><td><code>/home/bupd/hdd/data/BUPD_Personal</code></td><td><code>/mnt/photos</code>, read-write</td><td>Immich can index, modify sidecars, and delete originals. UI deletion can be destructive.</td></tr>
+                <tr><td>Mobile Booky library</td><td><code>/home/bupd/hdd/data/mobile-booky</code></td><td><code>/mnt/mobile-booky</code>, read-write</td><td>Available as a separate external-library import path with writable originals.</td></tr>
+                <tr><td>Prasanth library</td><td><code>/home/bupd/hdd/data/Prasanth</code></td><td><code>/mnt/prasanth</code>, read-write</td><td>Available as a separate external-library import path with writable originals.</td></tr>
                 <tr><td>ML model cache</td><td><code>20Gi</code> local-path PVC</td><td><code>/cache</code></td><td>Downloaded ML models survive pod restarts but remain node-local.</td></tr>
                 <tr><td>Valkey data</td><td><code>2Gi</code> local-path PVC</td><td>Valkey data directory</td><td>Queue/cache state survives pod replacement.</td></tr>
                 <tr><td>Database</td><td><code>50Gi</code> local-path PVC</td><td>PostgreSQL data directory</td><td>Stores metadata, users, albums, jobs, and vectors—not original photos.</td></tr>
               </tbody>
             </table>
             <div class="callout callout--warning">
-              <p class="callout__title">The external library is writable.</p>
-              <p class="callout__text">This is intentional for eventual Immich ownership and duplicate cleanup. A mistaken deletion can remove the original from <code>BUPD_Personal</code>; keep an independent backup.</p>
+              <p class="callout__title">All three external libraries are writable.</p>
+              <p class="callout__text">This is intentional for sidecars and deletion control. A mistaken deletion can remove an original from <code>BUPD_Personal</code>, <code>mobile-booky</code>, or <code>Prasanth</code>; keep an independent backup.</p>
             </div>
           </section>
 
@@ -778,7 +780,7 @@ machine-learning:
       replicas: 1</code></pre>
             <div class="callout">
               <p class="callout__title">Expected running result</p>
-              <p class="callout__text">The UI is available, Valkey accepts queues, and CUDA machine-learning jobs run. Video transcoding remains disabled; database and all persistent data are reused.</p>
+              <p class="callout__text">The UI is available, Valkey accepts queues, CUDA machine-learning jobs run, and incompatible videos are transcoded with NVENC. Database and all persistent data are reused.</p>
             </div>
           </section>
         </article>

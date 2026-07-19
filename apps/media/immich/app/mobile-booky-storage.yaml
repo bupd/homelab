@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: immich-mobile-booky
+  labels:
+    app.kubernetes.io/name: immich
+    app.kubernetes.io/component: external-library
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 1Ti
+  hostPath:
+    path: /home/bupd/hdd/data/mobile-booky
+    type: Directory
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - media-worker
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: immich-mobile-booky
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-mobile-booky
+  namespace: immich
+  labels:
+    app.kubernetes.io/name: immich
+    app.kubernetes.io/component: external-library
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Ti
+  storageClassName: immich-mobile-booky
+  volumeMode: Filesystem
+  volumeName: immich-mobile-booky

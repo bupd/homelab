@@ -38,7 +38,7 @@ immich:
     ffmpeg:
       accel: nvenc
       accelDecode: true
-      transcode: disabled
+      transcode: required
     # trash:
     #   enabled: false
     #   days: 30
@@ -90,6 +90,22 @@ server:
         - path: /mnt/photos
           # Immich owns this external library and may delete originals or write
           # XMP sidecars. Deletions from the UI are therefore destructive.
+          readOnly: false
+    mobile-booky:
+      enabled: true
+      type: persistentVolumeClaim
+      existingClaim: immich-mobile-booky
+      globalMounts:
+        - path: /mnt/mobile-booky
+          # This external library is writable for XMP sidecars and deletions.
+          readOnly: false
+    prasanth:
+      enabled: true
+      type: persistentVolumeClaim
+      existingClaim: immich-prasanth
+      globalMounts:
+        - path: /mnt/prasanth
+          # This external library is writable for XMP sidecars and deletions.
           readOnly: false
   controllers:
     main:
