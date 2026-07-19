@@ -577,6 +577,7 @@
                 <tr><td>Server image</td><td><code>v3.0.3</code></td><td>Overrides the chart's v3.0.0 app version.</td></tr>
                 <tr><td>ML image</td><td><code>v3.0.3-cuda</code></td><td>Includes CUDA support for NVIDIA inference.</td></tr>
                 <tr><td>Valkey image</td><td><code>9.1-alpine</code> by digest</td><td>A new upstream image cannot appear without a repository change.</td></tr>
+                <tr><td>GPU virtualization</td><td><code>HAMi 2.9.0</code></td><td>Replaces unbounded NVIDIA time-slicing with per-workload CUDA memory allocation limits.</td></tr>
                 <tr><td>Node selector</td><td><code>homelab.bupd.xyz/workload-pool: media</code></td><td>All chart workloads schedule only on nodes labeled for media.</td></tr>
                 <tr><td>Storage affinity</td><td><code>media-worker</code></td><td>Host-path volumes bind Immich to the node that owns the HDD.</td></tr>
               </tbody>
@@ -586,16 +587,20 @@
           <section class="section" id="components">
             <p class="section__kicker">03 / Workloads</p>
             <h2 class="section__title">Resources are bounded for a 16 GiB node</h2>
-            <p class="section__intro">Requests reserve scheduling capacity. Limits are hard ceilings; exceeding a memory limit can cause Kubernetes to restart that container.</p>
+            <p class="section__intro">CPU and system-memory requests reserve scheduling capacity. System-memory limits are cgroup ceilings; GPU-memory limits are enforced by HAMi-Core at the CUDA allocation layer.</p>
             <table class="data-table">
               <thead><tr><th>Component</th><th>CPU request</th><th>Memory request</th><th>Memory limit</th><th>GPU</th></tr></thead>
               <tbody>
-                <tr><td>Immich server</td><td><code>500m</code></td><td><code>1Gi</code></td><td><code>3Gi</code></td><td><code>1</code> time-sliced share</td></tr>
-                <tr><td>Machine learning</td><td><code>500m</code></td><td><code>1Gi</code></td><td><code>3Gi</code></td><td><code>1</code> time-sliced share</td></tr>
+                <tr><td>Immich server</td><td><code>500m</code></td><td><code>1Gi</code></td><td><code>3Gi</code></td><td>HAMi vGPU · <code>2048 MiB</code> VRAM</td></tr>
+                <tr><td>Machine learning</td><td><code>500m</code></td><td><code>1Gi</code></td><td><code>3Gi</code></td><td>HAMi vGPU · <code>3072 MiB</code> VRAM</td></tr>
                 <tr><td>Valkey</td><td><code>50m</code></td><td><code>128Mi</code></td><td><code>512Mi</code></td><td>None</td></tr>
                 <tr><td>PostgreSQL</td><td><code>500m</code></td><td><code>1Gi</code></td><td><code>4Gi</code></td><td>None</td></tr>
               </tbody>
             </table>
+            <div class="callout">
+              <p class="callout__title">Immich's combined VRAM allocation is 5 GiB.</p>
+              <p class="callout__text">HAMi admits 3 GiB for ML and 2 GiB for NVENC. A CUDA allocation beyond either pod's declared quota returns out-of-memory instead of consuming the remaining physical VRAM.</p>
+            </div>
             <div class="callout">
               <p class="callout__title">CPU is intentionally not capped.</p>
               <p class="callout__text">Background imports can use spare CPU and finish sooner. The measured server plus ML load was about 1.3 cores while face detection and indexing were active—not runaway use on this node.</p>

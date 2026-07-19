@@ -6,7 +6,7 @@ This folder owns the whole Immich deployment:
 - `app/`: official pinned Immich Helm chart, full `values.yaml`, and storage;
 - PostgreSQL, Valkey, and machine-learning cache use K3s `local-path`; and
 - Immich-managed writable storage uses the media HDD; and
-- the complete `BUPD_Personal` tree is mounted read-write as an external library.
+- all external-library trees are mounted read-write.
 
 Immich's writable paths are separated from the personal-media tree:
 
@@ -18,8 +18,9 @@ Immich's writable paths are separated from the personal-media tree:
 The Immich server sees the complete personal media tree at:
 
 ```text
-Host:      /home/bupd/hdd/data/BUPD_Personal
-Container: /mnt/photos (read-write)
+Host: /home/bupd/hdd/data/BUPD_Personal -> /mnt/photos (read-write)
+Host: /home/bupd/hdd/data/mobile-booky  -> /mnt/mobile-booky (read-write)
+Host: /home/bupd/hdd/data/Prasanth      -> /mnt/prasanth (read-write)
 ```
 
 This is intentionally destructive access: emptying Immich's trash can delete
@@ -33,20 +34,26 @@ on the worker's Linux filesystem, not the NTFS media disk.
 
 ## NVIDIA GPU acceleration
 
-The platform deploys NVIDIA's GPU Operator on `media-worker`. It configures the
-NVIDIA runtime in K3s's nested containerd and advertises two time-sliced
-`nvidia.com/gpu` slots backed by the RTX 3060. Immich uses one slot for CUDA
-machine learning and one for NVENC video transcoding. Both Pods use K3s's
-`nvidia` RuntimeClass.
+The platform deploys NVIDIA's GPU Operator and HAMi on `media-worker`. The GPU
+Operator retains physical GPU discovery and DCGM metrics, but its device plugin
+is disabled. HAMi is the only plugin advertising `nvidia.com/gpu`, and it
+enforces CUDA allocation limits through `nvidia.com/gpumem`.
+
+Immich receives a combined 5 GiB VRAM budget: 3072 MiB for CUDA machine
+learning and 2048 MiB for NVENC transcoding. Both Pods use K3s's `nvidia`
+RuntimeClass. HAMi isolation is software-enforced at the CUDA API layer rather
+than hardware isolation like MIG; an allocation beyond the declared budget
+returns CUDA out-of-memory.
 
 Verify Kubernetes and the containers:
 
 ```bash
 kubectl get node media-worker \
-  -o jsonpath='{.status.allocatable.nvidia\.com/gpu}{" GPU slots\n"}'
+  -o jsonpath='{.status.allocatable.nvidia\.com/gpu}{" HAMi vGPU slots\n"}'
 kubectl -n gpu-operator get pods
+kubectl -n kube-system get pods -l app.kubernetes.io/name=hami
 kubectl -n immich get pods \
-  -o custom-columns=NAME:.metadata.name,RUNTIME:.spec.runtimeClassName,GPU:.spec.containers[0].resources.limits.nvidia\.com/gpu
+  -o custom-columns=NAME:.metadata.name,RUNTIME:.spec.runtimeClassName,GPU:.spec.containers[0].resources.limits.nvidia\.com/gpu,VRAM:.spec.containers[0].resources.limits.nvidia\.com/gpumem
 kubectl -n immich exec deployment/immich-machine-learning -- nvidia-smi
 kubectl -n immich exec deployment/immich-server -- nvidia-smi
 ```
@@ -101,6 +108,8 @@ Database data:  K3s local-path PVC on media-worker's Linux filesystem
 Database dumps: /home/bupd/hdd/data/immich/backups
 Managed assets: /home/bupd/hdd/data/immich/library (`immich-managed-library-hdd`)
 External media: /home/bupd/hdd/data/BUPD_Personal (read-write at /mnt/photos)
+External media: /home/bupd/hdd/data/mobile-booky (read-write at /mnt/mobile-booky)
+External media: /home/bupd/hdd/data/Prasanth (read-write at /mnt/prasanth)
 ```
 
 The HDD copy protects against a broken database, but it does not protect
@@ -131,15 +140,16 @@ kubectl -n immich get cronjob immich-database-backup \
 
 Expected before the first restore: `true`.
 
-### Add all BUPD Personal photos and videos
+### Add the external photo and video libraries
 
 Finish fresh onboarding and create the administrator account first. Then, in
 the Immich web UI:
 
 1. Open **Administration -> External Libraries**.
 2. Click **Create Library** and select its owner.
-3. Name it `BUPD Personal`.
-4. Add `/mnt/photos` as the import path.
+3. Name the library for the mounted tree.
+4. Add one of `/mnt/photos`, `/mnt/mobile-booky`, or `/mnt/prasanth` as the
+   import path. Create separate libraries if they have different owners.
 5. Click **Scan New Library Files**.
 6. Watch **Administration -> Jobs** for library, metadata, thumbnail, and
    machine-learning progress.

@@ -42,26 +42,9 @@ spec:
     migManager:
       enabled: false
     devicePlugin:
-      config:
-        create: true
-        default: default
-        name: immich-gpu-sharing
-        data:
-          default: |-
-            version: v1
-            flags:
-              migStrategy: none
-              failOnInitError: true
-              plugin:
-                deviceListStrategy: envvar
-                deviceIDStrategy: uuid
-            sharing:
-              timeSlicing:
-                renameByDefault: false
-                failRequestsGreaterThanOne: true
-                resources:
-                  - name: nvidia.com/gpu
-                    replicas: 2
+      # HAMi is the only device plugin allowed to advertise nvidia.com/gpu.
+      # Running both plugins causes conflicting capacity and unbounded VRAM.
+      enabled: false
     dcgmExporter:
       enabled: true
       serviceMonitor:

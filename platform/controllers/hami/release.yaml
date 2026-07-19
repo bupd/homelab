@@ -1,0 +1,106 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: hami
+  namespace: kube-system
+spec:
+  dependsOn:
+    - name: gpu-operator
+      namespace: gpu-operator
+  chart:
+    spec:
+      chart: hami
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: HelmRepository
+        name: hami
+      version: 2.9.0
+  driftDetection:
+    mode: enabled
+  install:
+    remediation:
+      retries: 3
+  interval: 1h
+  timeout: 15m
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      remediateLastFailure: true
+      retries: 3
+      strategy: rollback
+  values:
+    global:
+      imageTag: v2.9.0
+    scheduler:
+      defaultSchedulerPolicy:
+        gpuSchedulerPolicy: spread
+        nodeSchedulerPolicy: binpack
+      forceOverwriteDefaultScheduler: true
+      kubeScheduler:
+        image:
+          pullPolicy: IfNotPresent
+          registry: registry.k8s.io
+          repository: kube-scheduler
+          tag: v1.36.2
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+      extender:
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+      service:
+        type: ClusterIP
+    devicePlugin:
+      # Ten schedulable vGPU slots, without advertising more memory than the
+      # physical 8 GiB RTX 3060. Per-pod nvidia.com/gpumem limits are enforced
+      # by HAMi-Core's CUDA allocation interception.
+      deviceCoreScaling: 1
+      deviceMemoryScaling: 1
+      deviceSplitCount: 10
+      migStrategy: none
+      runtimeClassName: nvidia
+      nvidiaNodeSelector:
+        homelab.bupd.xyz/accelerator: nvidia
+      nodeConfiguration:
+        config: |
+          {
+            "nodeconfig": [
+              {
+                "name": "media-worker",
+                "operatingmode": "hami-core",
+                "devicememoryscaling": 1,
+                "devicesplitcount": 10,
+                "preconfigureddevicememory": 0,
+                "migstrategy": "none",
+                "filterdevices": {
+                  "uuid": [],
+                  "index": []
+                },
+                "enablegetpreferredallocation": false
+              }
+            ]
+          }
+      resources:
+        limits:
+          memory: 512Mi
+        requests:
+          cpu: 50m
+          memory: 128Mi
+      monitor:
+        resources:
+          limits:
+            memory: 256Mi
+          requests:
+            cpu: 25m
+            memory: 64Mi
+      service:
+        type: ClusterIP
+    prometheus:
+      enabled: false

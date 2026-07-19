@@ -287,6 +287,7 @@ node policy
   -> kube-prometheus-stack
   -> CloudNativePG operator
   -> NVIDIA GPU Operator
+  -> HAMi GPU virtualization
   -> Immich database
   -> Immich
 ```
@@ -340,7 +341,7 @@ kubectl -n immich get helmrelease,ocirepository
 kubectl -n immich rollout status deployment/immich-server --timeout=15m
 kubectl -n immich get ingress immich
 kubectl get node media-worker \
-  -o jsonpath='{.status.allocatable.nvidia\.com/gpu}{" GPU slots\n"}'
+  -o jsonpath='{.status.allocatable.nvidia\.com/gpu}{" HAMi vGPU slots\n"}'
 ```
 
 Immich is private at <https://immich.tail6c5ea9.ts.net>. For recovery before
