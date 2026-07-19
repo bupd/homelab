@@ -70,7 +70,8 @@ The worker receives:
 - host libraries at the isolated, read-only `/usr/local/nvidia/host-libs`
   compatibility path for the injected NVIDIA tools; and
 - persistent GPU Operator toolkit files under `/var/lib/nvidia/k3s-toolkit`; and
-- persistent GPU Operator validation state under `/var/lib/nvidia/k3s-run`; and
+- persistent, shared-mount GPU Operator validation state under
+  `/var/lib/nvidia/k3s-run`; and
 - persistent K3s state under `/var/lib/rancher/k3s-media-worker`.
 
 The media disk is NTFS. Put bulk photos, videos, and downloads there. Do not
