@@ -29,6 +29,15 @@ Volume=/var/log/k3s-media-worker:/var/log
 Volume=/home/bupd/hdd/data:/home/bupd/hdd/data:rw
 Volume=/lib/modules:/lib/modules:ro
 Volume=/etc/cdi:/etc/cdi:ro
+# The host's CDI spec injects dynamically linked NVIDIA tools and libraries.
+# Supply the glibc runtime that the intentionally tiny K3s image does not carry,
+# so GPU Operator can validate the pre-installed host driver.
+Volume=/usr/lib/ld-linux-x86-64.so.2:/lib64/ld-linux-x86-64.so.2:ro
+Volume=/usr/lib/libc.so.6:/usr/lib/libc.so.6:ro
+Volume=/usr/lib/libpthread.so.0:/usr/lib/libpthread.so.0:ro
+Volume=/usr/lib/libm.so.6:/usr/lib/libm.so.6:ro
+Volume=/usr/lib/libdl.so.2:/usr/lib/libdl.so.2:ro
+Volume=/usr/lib/librt.so.1:/usr/lib/librt.so.1:ro
 
 Exec=agent
 

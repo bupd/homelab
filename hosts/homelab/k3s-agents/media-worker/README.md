@@ -67,13 +67,15 @@ The worker receives:
 - `/home/bupd/hdd/data` at the same path, read-write;
 - the host kernel modules;
 - all NVIDIA devices through CDI; and
+- the host glibc runtime files needed by the injected NVIDIA tools; and
 - persistent K3s state under `/var/lib/rancher/k3s-media-worker`.
 
 The media disk is NTFS. Put bulk photos, videos, and downloads there. Do not
 put databases there. Put databases and application configuration on ext4.
 
-The K3s image is intentionally tiny and cannot execute the host's dynamically
-linked `nvidia-smi`. The reconcile script instead checks that NVIDIA device
-nodes and driver libraries reached the worker. Kubernetes Pods still need the
-declaratively installed NVIDIA GPU Operator/device plugin before they can
-request `nvidia.com/gpu`.
+The K3s image is intentionally tiny, so the Quadlet read-only mounts the small
+set of host glibc runtime files required by CDI-injected NVIDIA tools. This lets
+GPU Operator validate the pre-installed host driver without installing another
+driver inside the worker. Kubernetes Pods still request the GPU through the
+declaratively installed NVIDIA GPU Operator/device plugin and
+`nvidia.com/gpu`.

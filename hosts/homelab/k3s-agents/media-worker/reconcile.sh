@@ -262,6 +262,16 @@ if install_if_changed 0644 "${cdi_temp}" /etc/cdi/nvidia.yaml; then
 fi
 nvidia-ctk cdi list | grep -qx 'nvidia.com/gpu=all' || \
   die "NVIDIA CDI device nvidia.com/gpu=all is unavailable"
+for glibc_file in \
+  /usr/lib/ld-linux-x86-64.so.2 \
+  /usr/lib/libc.so.6 \
+  /usr/lib/libpthread.so.0 \
+  /usr/lib/libm.so.6 \
+  /usr/lib/libdl.so.2 \
+  /usr/lib/librt.so.1; do
+  [[ -r ${glibc_file} ]] || \
+    die "required NVIDIA compatibility runtime file is unavailable: ${glibc_file}"
+done
 
 log "installing Podman Quadlet definitions"
 if install_if_changed 0644 "${WORKER_NETWORK}" \
