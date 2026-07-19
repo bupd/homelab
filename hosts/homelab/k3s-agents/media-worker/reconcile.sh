@@ -283,7 +283,8 @@ for glibc_file in \
   /usr/lib/libk5crypto.so.3 \
   /usr/lib/libcom_err.so.2 \
   /usr/lib/libkrb5support.so.0 \
-  /usr/lib/libkeyutils.so.1; do
+  /usr/lib/libkeyutils.so.1 \
+  /sbin/ldconfig; do
   [[ -r ${glibc_file} ]] || \
     die "required NVIDIA compatibility runtime file is unavailable: ${glibc_file}"
 done

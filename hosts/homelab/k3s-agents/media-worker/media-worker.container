@@ -55,6 +55,7 @@ Volume=/usr/lib/libk5crypto.so.3:/usr/lib/libk5crypto.so.3:ro
 Volume=/usr/lib/libcom_err.so.2:/usr/lib/libcom_err.so.2:ro
 Volume=/usr/lib/libkrb5support.so.0:/usr/lib/libkrb5support.so.0:ro
 Volume=/usr/lib/libkeyutils.so.1:/usr/lib/libkeyutils.so.1:ro
+Volume=/sbin/ldconfig:/sbin/ldconfig:ro
 
 Exec=agent
 
