@@ -9,7 +9,7 @@ spec:
     secretRef:
       name: sops-age
   dependsOn:
-    - name: nodes
+    - name: policies
   interval: 2m
   path: ./platform/networking
   prune: true

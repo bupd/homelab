@@ -10,6 +10,7 @@ The directories have distinct responsibilities:
 - `bootstrap/` declares the root OCI source and the root Flux `Kustomization`.
 - `cluster/` declares the ordered cluster-wide reconciliation graph.
 - `nodes/` owns policy for Kubernetes Nodes that have already joined.
+- `policies/` owns API-server admission guardrails for every workload.
 
 Application resources live under the repository-level `apps/` directory.
 Shared operators and other application platform services live under

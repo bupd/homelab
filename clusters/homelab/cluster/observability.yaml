@@ -9,7 +9,6 @@ spec:
     secretRef:
       name: sops-age
   dependsOn:
-    - name: nodes
     - name: networking
   interval: 2m
   path: ./platform/observability
