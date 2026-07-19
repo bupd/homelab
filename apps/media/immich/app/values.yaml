@@ -53,7 +53,7 @@ valkey:
   enabled: true
   controllers:
     main:
-      replicas: 1
+      replicas: 0
       containers:
         main:
           image:
@@ -92,7 +92,7 @@ server:
           readOnly: false
   controllers:
     main:
-      replicas: 1
+      replicas: 0
       initContainers:
         storage-init:
           image:
@@ -136,7 +136,7 @@ server:
                   key: dbname
           resources:
             limits:
-              memory: 4Gi
+              memory: 3Gi
               nvidia.com/gpu: 1
             requests:
               cpu: 500m
@@ -161,7 +161,7 @@ machine-learning:
     runtimeClassName: nvidia
   controllers:
     main:
-      replicas: 1
+      replicas: 0
       containers:
         main:
           image:
@@ -174,7 +174,7 @@ machine-learning:
             MPLCONFIGDIR: /cache/matplotlib-config
           resources:
             limits:
-              memory: 6Gi
+              memory: 3Gi
               nvidia.com/gpu: 1
             requests:
               cpu: 500m
