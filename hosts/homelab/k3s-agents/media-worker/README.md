@@ -70,6 +70,7 @@ The worker receives:
 - host libraries at the isolated, read-only `/usr/local/nvidia/host-libs`
   compatibility path for the injected NVIDIA tools; and
 - persistent GPU Operator toolkit files under `/var/lib/nvidia/k3s-toolkit`; and
+- persistent GPU Operator validation state under `/var/lib/nvidia/k3s-run`; and
 - persistent K3s state under `/var/lib/rancher/k3s-media-worker`.
 
 The media disk is NTFS. Put bulk photos, videos, and downloads there. Do not
@@ -81,7 +82,9 @@ NVIDIA tools. The NVIDIA runtime's OCI hooks do not inherit that library path,
 so their required SONAMEs are additionally mounted read-only at the standard
 paths they expect, along with the host's statically linked `ldconfig`. This lets
 GPU Operator validate the pre-installed host driver without installing another
-driver inside the worker. The NVIDIA runtime binary and K3s containerd drop-in
-survive worker restarts; K3s imports the drop-in from its persistent agent state
-when it starts. Kubernetes Pods request the GPU through the declaratively
-installed NVIDIA GPU Operator/device plugin and `nvidia.com/gpu`.
+driver inside the worker. The NVIDIA runtime binary, validation markers, and
+K3s containerd drop-in survive worker restarts; this prevents GPU Operator from
+treating every nested-worker restart as a fresh runtime installation. K3s
+imports the drop-in from its persistent agent state when it starts. Kubernetes
+Pods request the GPU through the declaratively installed NVIDIA GPU
+Operator/device plugin and `nvidia.com/gpu`.

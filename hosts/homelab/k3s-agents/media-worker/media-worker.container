@@ -29,6 +29,7 @@ Volume=/var/lib/rancher/k3s-media-worker-kubelet:/var/lib/kubelet:rshared
 Volume=/var/lib/rancher/k3s-media-worker-cni:/var/lib/cni
 Volume=/var/log/k3s-media-worker:/var/log
 Volume=/var/lib/nvidia/k3s-toolkit:/usr/local/nvidia
+Volume=/var/lib/nvidia/k3s-run:/run/nvidia
 Volume=/usr/lib:/usr/local/nvidia/host-libs:ro
 Volume=/home/bupd/hdd/data:/home/bupd/hdd/data:rw
 Volume=/lib/modules:/lib/modules:ro
