@@ -38,6 +38,7 @@ immich:
     ffmpeg:
       accel: nvenc
       accelDecode: true
+      transcode: disabled
     # trash:
     #   enabled: false
     #   days: 30
