@@ -485,7 +485,7 @@
         <div class="status-strip" aria-label="Current deployment summary">
           <div class="status-card">
             <span class="status-card__label">Application</span>
-            <strong class="status-card__value status-card__value--paused">Paused · 0 replicas</strong>
+            <strong class="status-card__value status-card__value--on">Running · 1 replica</strong>
           </div>
           <div class="status-card">
             <span class="status-card__label">Database</span>
@@ -515,26 +515,26 @@
             <a class="docs-nav__link" href="#networking">Private networking</a>
             <a class="docs-nav__link" href="#observability">Metrics</a>
             <a class="docs-nav__link" href="#flux">Flux behavior</a>
-            <a class="docs-nav__link" href="#resume">Resume checklist</a>
+            <a class="docs-nav__link" href="#resume">Running declaration</a>
           </nav>
         </aside>
 
         <article class="docs__content">
           <section class="section" id="state">
             <p class="section__kicker">01 / State</p>
-            <h2 class="section__title">Installed, but deliberately stopped</h2>
+            <h2 class="section__title">Installed and running</h2>
             <p class="section__intro">
-              Flux still owns the release, Services, Ingress, PVCs, configuration, and database. Only the three application controllers are scaled down.
+              Flux owns the release, Services, Ingress, PVCs, configuration, and database. All three application controllers declare one replica.
             </p>
-            <div class="callout callout--warning">
-              <p class="callout__title">Immich is unavailable right now.</p>
-              <p class="callout__text">Server, machine learning, and Valkey each have <code>replicas: 0</code>. The Tailscale address exists, but there is no Immich server pod behind it.</p>
+            <div class="callout">
+              <p class="callout__title">Immich is enabled as a complete workload set.</p>
+              <p class="callout__text">Server, machine learning, and Valkey each have <code>replicas: 1</code>. Flux will keep one pod for every component after the updated artifact is reconciled.</p>
             </div>
             <div class="setting-grid">
               <article class="setting-card">
                 <div class="setting-card__top">
                   <div><h3 class="setting-card__title">Server replicas</h3><code class="setting-card__key">server.controllers.main.replicas</code></div>
-                  <span class="pill pill--off">0 · OFF</span>
+                  <span class="pill pill--on">1 · ON</span>
                 </div>
                 <p class="setting-card__body">Controls the API, web UI, uploads, library jobs, metadata extraction, thumbnails, and video handling.</p>
                 <p class="setting-card__outcome"><strong>Set to 1:</strong> Immich becomes reachable and background work resumes. <strong>Set to 0:</strong> no UI, API, uploads, or jobs.</p>
@@ -542,7 +542,7 @@
               <article class="setting-card">
                 <div class="setting-card__top">
                   <div><h3 class="setting-card__title">Machine-learning replicas</h3><code class="setting-card__key">machine-learning.controllers.main.replicas</code></div>
-                  <span class="pill pill--off">0 · OFF</span>
+                  <span class="pill pill--on">1 · ON</span>
                 </div>
                 <p class="setting-card__body">Runs facial recognition, smart search, and OCR inference through the RTX 3060.</p>
                 <p class="setting-card__outcome"><strong>Set to 1:</strong> ML jobs run. <strong>Set to 0:</strong> the server can run, but ML-backed jobs fail or remain queued.</p>
@@ -550,7 +550,7 @@
               <article class="setting-card">
                 <div class="setting-card__top">
                   <div><h3 class="setting-card__title">Valkey replicas</h3><code class="setting-card__key">valkey.controllers.main.replicas</code></div>
-                  <span class="pill pill--off">0 · OFF</span>
+                  <span class="pill pill--on">1 · ON</span>
                 </div>
                 <p class="setting-card__body">Provides Immich's Redis-compatible queue and cache service.</p>
                 <p class="setting-card__outcome"><strong>Set to 1:</strong> job queues and cache work. <strong>Set to 0:</strong> the Immich server cannot operate correctly even if its own replica is enabled.</p>
@@ -560,8 +560,8 @@
                   <div><h3 class="setting-card__title">PostgreSQL instances</h3><code class="setting-card__key">Cluster.spec.instances</code></div>
                   <span class="pill pill--on">1 · ON</span>
                 </div>
-                <p class="setting-card__body">CloudNativePG keeps the application database online independently of the paused Helm workloads.</p>
-                <p class="setting-card__outcome"><strong>Current outcome:</strong> metadata remains available and no database bootstrap is needed when Immich resumes. This is a single instance, not high availability.</p>
+                <p class="setting-card__body">CloudNativePG keeps the application database online independently of the Helm workloads.</p>
+                <p class="setting-card__outcome"><strong>Current outcome:</strong> metadata is available to the running Immich server. This is a single instance, not high availability.</p>
               </article>
             </div>
           </section>
@@ -628,7 +628,7 @@
                   <span class="pill pill--on">true</span>
                 </div>
                 <p class="setting-card__body">The ML Deployment, Service, cache PVC, CUDA image, and GPU request are rendered by Helm.</p>
-                <p class="setting-card__outcome"><strong>Important:</strong> enabled means “resources exist”; its replica count of zero means the pod is currently stopped.</p>
+                <p class="setting-card__outcome"><strong>Current outcome:</strong> enabled plus one replica means the CUDA machine-learning pod is requested and runs when scheduling succeeds.</p>
               </article>
               <article class="setting-card">
                 <div class="setting-card__top">
@@ -730,12 +730,12 @@
               <article class="setting-card">
                 <div class="setting-card__top"><div><h3 class="setting-card__title">Immich metrics</h3><code class="setting-card__key">immich.metrics.enabled</code></div><span class="pill pill--on">true</span></div>
                 <p class="setting-card__body">The Helm chart creates ServiceMonitor resources for Prometheus Operator discovery.</p>
-                <p class="setting-card__outcome"><strong>Set false:</strong> Prometheus stops discovering Immich endpoints. <strong>Current caveat:</strong> replicas are zero, so there are no live app metrics to scrape.</p>
+                <p class="setting-card__outcome"><strong>Set false:</strong> Prometheus stops discovering Immich endpoints. <strong>Current outcome:</strong> the running application exposes live metrics for scraping.</p>
               </article>
               <article class="setting-card">
                 <div class="setting-card__top"><div><h3 class="setting-card__title">PostgreSQL metrics</h3><code class="setting-card__key">monitoring.enablePodMonitor</code></div><span class="pill pill--on">true</span></div>
                 <p class="setting-card__body">CNPG creates a PodMonitor for database health and performance metrics.</p>
-                <p class="setting-card__outcome"><strong>Outcome:</strong> database metrics remain available while the Immich application is paused.</p>
+                <p class="setting-card__outcome"><strong>Outcome:</strong> database metrics are available alongside the application metrics.</p>
               </article>
             </div>
           </section>
@@ -760,8 +760,8 @@
 
           <section class="section" id="resume">
             <p class="section__kicker">10 / Operations</p>
-            <h2 class="section__title">What to change when resuming Immich</h2>
-            <p class="section__intro">Set these three replica values to one together, then publish the artifact. Keeping the dependency set coherent avoids a server pod starting without its queue or ML endpoint.</p>
+            <h2 class="section__title">Current running replica declaration</h2>
+            <p class="section__intro">These three values are set to one together. Keeping the dependency set coherent avoids a server pod starting without its queue or ML endpoint.</p>
             <pre style="background: var(--color-navy-deep); border-radius: var(--radius-md); color: oklch(90% .01 80); margin-top: var(--space-6); overflow-x: auto; padding: var(--space-5);"><code>valkey:
   controllers:
     main:
@@ -777,8 +777,8 @@ machine-learning:
     main:
       replicas: 1</code></pre>
             <div class="callout">
-              <p class="callout__title">Expected result after resume</p>
-              <p class="callout__text">The UI returns, Valkey accepts queues, and CUDA machine-learning jobs resume. Video transcoding remains disabled; database and all persistent data are reused.</p>
+              <p class="callout__title">Expected running result</p>
+              <p class="callout__text">The UI is available, Valkey accepts queues, and CUDA machine-learning jobs run. Video transcoding remains disabled; database and all persistent data are reused.</p>
             </div>
           </section>
         </article>

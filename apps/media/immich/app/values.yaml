@@ -54,7 +54,7 @@ valkey:
   enabled: true
   controllers:
     main:
-      replicas: 0
+      replicas: 1
       containers:
         main:
           image:
@@ -93,7 +93,7 @@ server:
           readOnly: false
   controllers:
     main:
-      replicas: 0
+      replicas: 1
       initContainers:
         storage-init:
           image:
@@ -162,7 +162,7 @@ machine-learning:
     runtimeClassName: nvidia
   controllers:
     main:
-      replicas: 0
+      replicas: 1
       containers:
         main:
           image:
