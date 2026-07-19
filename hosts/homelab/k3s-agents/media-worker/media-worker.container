@@ -42,6 +42,19 @@ Volume=/usr/lib/libpthread.so.0:/usr/lib/libpthread.so.0:ro
 Volume=/usr/lib/libm.so.6:/usr/lib/libm.so.6:ro
 Volume=/usr/lib/libdl.so.2:/usr/lib/libdl.so.2:ro
 Volume=/usr/lib/librt.so.1:/usr/lib/librt.so.1:ro
+Volume=/usr/lib/libresolv.so.2:/usr/lib/libresolv.so.2:ro
+Volume=/usr/lib/libcap.so.2:/usr/lib/libcap.so.2:ro
+Volume=/usr/lib/libelf.so.1:/usr/lib/libelf.so.1:ro
+Volume=/usr/lib/libtirpc.so.3:/usr/lib/libtirpc.so.3:ro
+Volume=/usr/lib/libseccomp.so.2:/usr/lib/libseccomp.so.2:ro
+Volume=/usr/lib/libz.so.1:/usr/lib/libz.so.1:ro
+Volume=/usr/lib/libzstd.so.1:/usr/lib/libzstd.so.1:ro
+Volume=/usr/lib/libgssapi_krb5.so.2:/usr/lib/libgssapi_krb5.so.2:ro
+Volume=/usr/lib/libkrb5.so.3:/usr/lib/libkrb5.so.3:ro
+Volume=/usr/lib/libk5crypto.so.3:/usr/lib/libk5crypto.so.3:ro
+Volume=/usr/lib/libcom_err.so.2:/usr/lib/libcom_err.so.2:ro
+Volume=/usr/lib/libkrb5support.so.0:/usr/lib/libkrb5support.so.0:ro
+Volume=/usr/lib/libkeyutils.so.1:/usr/lib/libkeyutils.so.1:ro
 
 Exec=agent
 

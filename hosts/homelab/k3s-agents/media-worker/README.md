@@ -77,9 +77,11 @@ put databases there. Put databases and application configuration on ext4.
 
 The K3s image is intentionally tiny, so the Quadlet supplies the host glibc
 loader plus an isolated, read-only host-library path required by CDI-injected
-NVIDIA tools. This lets GPU Operator validate the pre-installed host driver
-without installing another driver inside the worker. The NVIDIA runtime binary
-and K3s containerd drop-in survive worker restarts; K3s imports the drop-in from
-its persistent agent state when it starts. Kubernetes Pods request the GPU
-through the declaratively installed NVIDIA GPU Operator/device plugin and
-`nvidia.com/gpu`.
+NVIDIA tools. The NVIDIA runtime's OCI hooks do not inherit that library path,
+so their required SONAMEs are additionally mounted read-only at the standard
+paths they expect. This lets GPU Operator validate the pre-installed host
+driver without installing another driver inside the worker. The NVIDIA runtime
+binary and K3s containerd drop-in survive worker restarts; K3s imports the
+drop-in from its persistent agent state when it starts. Kubernetes Pods request
+the GPU through the declaratively installed NVIDIA GPU Operator/device plugin
+and `nvidia.com/gpu`.

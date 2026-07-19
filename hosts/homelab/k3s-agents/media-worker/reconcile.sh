@@ -270,7 +270,20 @@ for glibc_file in \
   /usr/lib/libpthread.so.0 \
   /usr/lib/libm.so.6 \
   /usr/lib/libdl.so.2 \
-  /usr/lib/librt.so.1; do
+  /usr/lib/librt.so.1 \
+  /usr/lib/libresolv.so.2 \
+  /usr/lib/libcap.so.2 \
+  /usr/lib/libelf.so.1 \
+  /usr/lib/libtirpc.so.3 \
+  /usr/lib/libseccomp.so.2 \
+  /usr/lib/libz.so.1 \
+  /usr/lib/libzstd.so.1 \
+  /usr/lib/libgssapi_krb5.so.2 \
+  /usr/lib/libkrb5.so.3 \
+  /usr/lib/libk5crypto.so.3 \
+  /usr/lib/libcom_err.so.2 \
+  /usr/lib/libkrb5support.so.0 \
+  /usr/lib/libkeyutils.so.1; do
   [[ -r ${glibc_file} ]] || \
     die "required NVIDIA compatibility runtime file is unavailable: ${glibc_file}"
 done
