@@ -14,6 +14,7 @@ readonly WORKER_CONFIG="${SCRIPT_DIR}/config.yaml"
 readonly WORKER_NETWORK="${SCRIPT_DIR}/media-worker.network"
 readonly WORKER_CONTAINER="${SCRIPT_DIR}/media-worker.container"
 readonly WORKER_ENSURE_SERVICE="${SCRIPT_DIR}/media-worker-ensure.service"
+readonly WORKER_CDI_REFRESH="${SCRIPT_DIR}/refresh-nvidia-cdi.sh"
 readonly WORKER_FSTAB="${SCRIPT_DIR}/media-worker.fstab"
 readonly WORKER_POLICY="${REPO_ROOT}/clusters/homelab/nodes/media-worker/node-policy.yaml"
 readonly KUBECTL=(k3s kubectl)
@@ -188,6 +189,7 @@ for file in \
   "${WORKER_NETWORK}" \
   "${WORKER_CONTAINER}" \
   "${WORKER_ENSURE_SERVICE}" \
+  "${WORKER_CDI_REFRESH}" \
   "${WORKER_FSTAB}" \
   "${WORKER_POLICY}"; do
   [[ -f ${file} ]] || die "missing declarative file: ${file}"
@@ -216,6 +218,7 @@ install -d -m 0755 \
   /var/log/k3s-media-worker \
   /etc/containers/systemd \
   /etc/cdi \
+  /usr/local/lib/homelab \
   /var/backups/homelab
 install -d -m 0700 /etc/rancher/k3s-media-worker/node
 
@@ -254,13 +257,11 @@ if install_if_changed 0600 /var/lib/rancher/k3s/server/node-token \
 fi
 
 log "generating NVIDIA CDI configuration"
-cdi_temp="$(mktemp --suffix=.yaml)"
-trap 'rm -f "${cdi_temp}"' EXIT
-nvidia-ctk cdi generate --output="${cdi_temp}"
-[[ -s ${cdi_temp} ]] || die "NVIDIA CDI generator produced an empty spec"
-if install_if_changed 0644 "${cdi_temp}" /etc/cdi/nvidia.yaml; then
+if install_if_changed 0755 "${WORKER_CDI_REFRESH}" \
+  /usr/local/lib/homelab/refresh-nvidia-cdi.sh; then
   worker_changed=true
 fi
+/usr/local/lib/homelab/refresh-nvidia-cdi.sh
 nvidia-ctk cdi list | grep -qx 'nvidia.com/gpu=all' || \
   die "NVIDIA CDI device nvidia.com/gpu=all is unavailable"
 for glibc_file in \

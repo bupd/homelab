@@ -67,6 +67,7 @@ Volume=/etc/nvidia-container-runtime:/etc/nvidia-container-runtime:ro
 Exec=agent
 
 [Service]
+ExecStartPre=/usr/local/lib/homelab/refresh-nvidia-cdi.sh
 Restart=always
 RestartSec=5
 TimeoutStartSec=900

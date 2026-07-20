@@ -81,6 +81,7 @@ server:
   enabled: true
   defaultPodOptions:
     runtimeClassName: nvidia
+    schedulerName: hami-scheduler
   persistence:
     external-library:
       enabled: true
@@ -178,6 +179,7 @@ machine-learning:
   enabled: true
   defaultPodOptions:
     runtimeClassName: nvidia
+    schedulerName: hami-scheduler
   controllers:
     main:
       replicas: 1
