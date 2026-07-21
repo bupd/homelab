@@ -1,0 +1,75 @@
+controllers:
+  main:
+    replicas: 1
+    strategy: Recreate
+    initContainers:
+      seed-config:
+        image:
+          repository: docker.io/library/busybox
+          tag: 1.37.0
+          digest: sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+        command: [/bin/sh, /bootstrap/seed-bazarr-config.sh]
+        env:
+          ADMIN_PASSWORD:
+            valueFrom:
+              secretKeyRef: {name: media-automation-credentials, key: ADMIN_PASSWORD}
+          BAZARR_API_KEY:
+            valueFrom:
+              secretKeyRef: {name: media-automation-credentials, key: BAZARR_API_KEY}
+          SONARR_API_KEY:
+            valueFrom:
+              secretKeyRef: {name: media-automation-credentials, key: SONARR_API_KEY}
+          RADARR_API_KEY:
+            valueFrom:
+              secretKeyRef: {name: media-automation-credentials, key: RADARR_API_KEY}
+    containers:
+      main:
+        image:
+          repository: lscr.io/linuxserver/bazarr
+          tag: version-v1.6.0
+          digest: sha256:4c30dc0bb9a5d223075e7f5d12c77bd293c4b460f86d696dbe64763104c1e88c
+        env: {PUID: "1000", PGID: "1000", TZ: Asia/Kolkata, UMASK: "002"}
+        probes:
+          liveness: &probe {enabled: true, type: HTTP, path: /, port: 6767}
+          readiness: *probe
+          startup:
+            <<: *probe
+            spec: {failureThreshold: 30, periodSeconds: 10}
+        resources:
+          requests: {cpu: 50m, memory: 128Mi}
+          limits: {memory: 1Gi}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+          seccompProfile: {type: RuntimeDefault}
+defaultPodOptions:
+  nodeSelector: {homelab.bupd.xyz/workload-pool: media}
+  securityContext: {fsGroup: 1000, fsGroupChangePolicy: OnRootMismatch}
+service:
+  main:
+    controller: main
+    ports:
+      http: {port: 6767, primary: true, protocol: HTTP}
+persistence:
+  config:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    storageClass: local-path
+    retain: true
+    advancedMounts:
+      main:
+        main: [{path: /config}]
+        seed-config: [{path: /config}]
+  media: {type: persistentVolumeClaim, existingClaim: media-data, globalMounts: [{path: /data}]}
+  bootstrap:
+    type: configMap
+    name: media-bootstrap
+    advancedMounts:
+      main:
+        seed-config:
+          - {path: /bootstrap/seed-bazarr-config.sh, subPath: seed-bazarr-config.sh, readOnly: true}
+  tmp: {type: emptyDir, globalMounts: [{path: /tmp}]}

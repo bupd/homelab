@@ -1,0 +1,49 @@
+controllers:
+  main:
+    replicas: 1
+    strategy: Recreate
+    containers:
+      main:
+        image:
+          repository: ghcr.io/fallenbagel/jellyseerr
+          tag: 2.7.3
+          digest: sha256:9cc9e9ee6cd5cf5a23feb45c37742ba34cfd6314d81d259cddb373a97ac92cdd
+        env:
+          API_KEY:
+            valueFrom:
+              secretKeyRef: {name: media-automation-credentials, key: JELLYSEERR_API_KEY}
+          LOG_LEVEL: info
+          TZ: Asia/Kolkata
+        probes:
+          liveness: &probe {enabled: true, type: HTTP, path: /api/v1/status, port: 5055}
+          readiness: *probe
+          startup:
+            <<: *probe
+            spec: {failureThreshold: 30, periodSeconds: 10}
+        resources:
+          requests: {cpu: 50m, memory: 256Mi}
+          limits: {memory: 1Gi}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+          seccompProfile: {type: RuntimeDefault}
+defaultPodOptions:
+  nodeSelector: {homelab.bupd.xyz/workload-pool: media}
+  securityContext: {fsGroup: 1000, fsGroupChangePolicy: OnRootMismatch}
+service:
+  main:
+    controller: main
+    ports:
+      http: {port: 5055, primary: true, protocol: HTTP}
+persistence:
+  config:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    storageClass: local-path
+    retain: true
+    globalMounts: [{path: /app/config}]
+  tmp: {type: emptyDir, globalMounts: [{path: /tmp}]}

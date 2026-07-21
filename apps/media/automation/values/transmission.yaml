@@ -1,0 +1,61 @@
+controllers:
+  main:
+    replicas: 1
+    strategy: Recreate
+    containers:
+      main:
+        image:
+          repository: lscr.io/linuxserver/transmission
+          tag: version-4.1.3-r0
+          digest: sha256:0913501f5d05c019f5e3555a3299df1d8de420fdf882c92a8857787f9fbf999d
+        env:
+          PUID: "1000"
+          PGID: "1000"
+          TZ: Asia/Kolkata
+          UMASK: "002"
+          USER: admin
+          PASS:
+            valueFrom:
+              secretKeyRef: {name: media-automation-credentials, key: ADMIN_PASSWORD}
+          PEERPORT: "51413"
+          TRANSMISSION_DOWNLOAD_DIR: /data/downloads/complete
+          TRANSMISSION_INCOMPLETE_DIR: /data/downloads/incomplete
+          TRANSMISSION_INCOMPLETE_DIR_ENABLED: "true"
+          TRANSMISSION_RPC_AUTHENTICATION_REQUIRED: "true"
+        probes:
+          liveness: &probe {enabled: true, type: HTTP, path: /transmission/web/, port: 9091}
+          readiness: *probe
+          startup:
+            <<: *probe
+            spec: {failureThreshold: 30, periodSeconds: 10}
+        resources:
+          requests: {cpu: 50m, memory: 128Mi}
+          limits: {memory: 1Gi}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+          seccompProfile: {type: RuntimeDefault}
+defaultPodOptions:
+  nodeSelector: {homelab.bupd.xyz/workload-pool: media}
+  securityContext: {fsGroup: 1000, fsGroupChangePolicy: OnRootMismatch}
+service:
+  main:
+    controller: main
+    ports:
+      http: {port: 9091, primary: true, protocol: HTTP}
+      peer-tcp: {port: 51413, protocol: TCP}
+      peer-udp: {port: 51413, protocol: UDP}
+persistence:
+  config:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    storageClass: local-path
+    retain: true
+    globalMounts: [{path: /config}]
+  media: {type: persistentVolumeClaim, existingClaim: media-data, globalMounts: [{path: /data}]}
+  watch: {type: emptyDir, globalMounts: [{path: /watch}]}
+  tmp: {type: emptyDir, globalMounts: [{path: /tmp}]}

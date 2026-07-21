@@ -1,0 +1,70 @@
+controllers:
+  main:
+    replicas: 1
+    strategy: Recreate
+    initContainers:
+      seed-config:
+        image:
+          repository: docker.io/library/busybox
+          tag: 1.37.0
+          digest: sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+        command: [/bin/sh, /bootstrap/seed-arr-config.sh]
+        env:
+          APP_PORT: "8686"
+          API_KEY:
+            valueFrom:
+              secretKeyRef: {name: media-automation-credentials, key: LIDARR_API_KEY}
+          ADMIN_PASSWORD:
+            valueFrom:
+              secretKeyRef: {name: media-automation-credentials, key: ADMIN_PASSWORD}
+    containers:
+      main:
+        image:
+          repository: lscr.io/linuxserver/lidarr
+          tag: version-3.1.0.4875
+          digest: sha256:1caffbd1e5ad5fe3cf6f63de4aa6941e9d31625b0d7e08b60c6eeb6cf09e3a91
+        env: {PUID: "1000", PGID: "1000", TZ: Asia/Kolkata, UMASK: "002"}
+        probes:
+          liveness: &probe {enabled: true, type: HTTP, path: /ping, port: 8686}
+          readiness: *probe
+          startup:
+            <<: *probe
+            spec: {failureThreshold: 30, periodSeconds: 10}
+        resources:
+          requests: {cpu: 50m, memory: 128Mi}
+          limits: {memory: 1Gi}
+        securityContext: &securityContext
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+          seccompProfile: {type: RuntimeDefault}
+defaultPodOptions: &podOptions
+  nodeSelector: {homelab.bupd.xyz/workload-pool: media}
+  securityContext: {fsGroup: 1000, fsGroupChangePolicy: OnRootMismatch}
+service:
+  main:
+    controller: main
+    ports:
+      http: {port: 8686, primary: true, protocol: HTTP}
+persistence:
+  config:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    storageClass: local-path
+    retain: true
+    advancedMounts:
+      main:
+        main: [{path: /config}]
+        seed-config: [{path: /config}]
+  media: {type: persistentVolumeClaim, existingClaim: media-data, globalMounts: [{path: /data}]}
+  bootstrap:
+    type: configMap
+    name: media-bootstrap
+    advancedMounts:
+      main:
+        seed-config:
+          - {path: /bootstrap/seed-arr-config.sh, subPath: seed-arr-config.sh, readOnly: true}
+  tmp: {type: emptyDir, globalMounts: [{path: /tmp}]}

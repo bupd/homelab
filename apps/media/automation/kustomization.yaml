@@ -1,0 +1,97 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - source.yaml
+  - releases.yaml
+  - credentials.sops.yaml
+  - ingress.yaml
+  - bootstrap-job.yaml
+
+configMapGenerator:
+  - name: media-bootstrap
+    namespace: media
+    files:
+      - bootstrap/bootstrap.py
+      - bootstrap/seed-arr-config.sh
+      - bootstrap/seed-bazarr-config.sh
+      - bootstrap/application.yml
+    options:
+      labels:
+        reconcile.fluxcd.io/watch: Enabled
+  - name: radarr-values
+    namespace: media
+    files:
+      - values.yaml=values/radarr.yaml
+  - name: sonarr-values
+    namespace: media
+    files:
+      - values.yaml=values/sonarr.yaml
+  - name: lidarr-values
+    namespace: media
+    files:
+      - values.yaml=values/lidarr.yaml
+  - name: whisparr-values
+    namespace: media
+    files:
+      - values.yaml=values/whisparr.yaml
+  - name: prowlarr-values
+    namespace: media
+    files:
+      - values.yaml=values/prowlarr.yaml
+  - name: transmission-values
+    namespace: media
+    files:
+      - values.yaml=values/transmission.yaml
+  - name: bazarr-values
+    namespace: media
+    files:
+      - values.yaml=values/bazarr.yaml
+  - name: jellyseerr-values
+    namespace: media
+    files:
+      - values.yaml=values/jellyseerr.yaml
+  - name: janitorr-values
+    namespace: media
+    files:
+      - values.yaml=values/janitorr.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    reconcile.fluxcd.io/watch: Enabled
+
+patches:
+  - target:
+      group: helm.toolkit.fluxcd.io
+      version: v2
+      kind: HelmRelease
+    patch: |-
+      - op: add
+        path: /spec/chartRef
+        value:
+          kind: OCIRepository
+          name: media-app-template-chart
+      - op: add
+        path: /spec/driftDetection
+        value:
+          mode: enabled
+      - op: add
+        path: /spec/install
+        value:
+          remediation:
+            retries: 3
+      - op: add
+        path: /spec/interval
+        value: 2m
+      - op: add
+        path: /spec/timeout
+        value: 10m
+      - op: add
+        path: /spec/upgrade
+        value:
+          cleanupOnFail: true
+          remediation:
+            remediateLastFailure: true
+            retries: 3
+            strategy: rollback

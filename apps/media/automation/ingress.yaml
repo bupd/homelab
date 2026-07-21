@@ -1,0 +1,127 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: radarr
+  namespace: media
+spec: &radarrIngress
+  defaultBackend:
+    service:
+      name: radarr
+      port:
+        number: 7878
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - radarr
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sonarr
+  namespace: media
+spec:
+  defaultBackend:
+    service:
+      name: sonarr
+      port:
+        number: 8989
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - sonarr
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lidarr
+  namespace: media
+spec:
+  defaultBackend:
+    service:
+      name: lidarr
+      port:
+        number: 8686
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - lidarr
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: whisparr
+  namespace: media
+spec:
+  defaultBackend:
+    service:
+      name: whisparr
+      port:
+        number: 6969
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - whisparr
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prowlarr
+  namespace: media
+spec:
+  defaultBackend:
+    service:
+      name: prowlarr
+      port:
+        number: 9696
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - prowlarr
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: transmission
+  namespace: media
+spec:
+  defaultBackend:
+    service:
+      name: transmission
+      port:
+        number: 9091
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - transmission
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bazarr
+  namespace: media
+spec:
+  defaultBackend:
+    service:
+      name: bazarr
+      port:
+        number: 6767
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - bazarr
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jellyseerr
+  namespace: media
+spec:
+  defaultBackend:
+    service:
+      name: jellyseerr
+      port:
+        number: 5055
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - jellyseerr

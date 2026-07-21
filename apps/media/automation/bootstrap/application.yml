@@ -1,0 +1,77 @@
+logging:
+  level:
+    com.github.schaka: INFO
+  file:
+    name: /logs/janitorr.log
+
+file-system:
+  access: true
+  validate-seeding: true
+  leaving-soon-dir: /data/Leaving-Soon
+  media-server-leaving-soon-dir: /data/Leaving-Soon
+  from-scratch: true
+  free-space-check-dir: /data
+
+application:
+  dry-run: true
+  run-once: false
+  whole-tv-show: false
+  leaving-soon: 14d
+  exclusion-tags:
+    - janitorr_keep
+  media-deletion:
+    enabled: true
+    movie-expiration:
+      10: 90d
+      20: 180d
+    season-expiration:
+      10: 120d
+      20: 240d
+  tag-based-deletion:
+    enabled: false
+  episode-deletion:
+    enabled: false
+
+clients:
+  default:
+    connect-timeout: 60s
+    read-timeout: 60s
+    level: NONE
+  sonarr:
+    enabled: true
+    url: http://sonarr:8989
+    api-key: __SONARR_API_KEY__
+    delete-empty-shows: true
+    import-exclusions: false
+  radarr:
+    enabled: true
+    url: http://radarr:7878
+    api-key: __RADARR_API_KEY__
+    only-delete-files: false
+    import-exclusions: false
+  bazarr:
+    enabled: true
+    url: http://bazarr:6767
+    api-key: __BAZARR_API_KEY__
+  jellyfin:
+    enabled: true
+    url: http://jellyfin:8096
+    api-key: __JELLYFIN_API_KEY__
+    username: __JELLYFIN_USERNAME__
+    password: __JELLYFIN_PASSWORD__
+    delete: true
+    exclude-favorited: true
+    leaving-soon-tv: Shows (Leaving Soon)
+    leaving-soon-movies: Movies (Leaving Soon)
+    leaving-soon-type: MOVIES_AND_TV
+  jellyseerr:
+    enabled: true
+    url: http://jellyseerr:5055
+    api-key: __JELLYSEERR_API_KEY__
+    match-server: false
+  jellystat:
+    enabled: false
+  streamystats:
+    enabled: false
+  janitorr-stats:
+    enabled: false

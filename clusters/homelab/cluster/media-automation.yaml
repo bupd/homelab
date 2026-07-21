@@ -1,0 +1,22 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: media-automation
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: jellyfin
+    - name: networking
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  interval: 2m
+  path: ./apps/media/automation
+  prune: true
+  retryInterval: 30s
+  sourceRef:
+    kind: OCIRepository
+    name: homelab
+  timeout: 30m
+  wait: true

@@ -12,3 +12,4 @@ resources:
   - flux-operator.yaml
   - flux-ui.yaml
   - jellyfin.yaml
+  - media-automation.yaml

@@ -1,0 +1,38 @@
+controllers:
+  main:
+    replicas: 1
+    strategy: Recreate
+    containers:
+      main:
+        image:
+          repository: ghcr.io/schaka/janitorr
+          tag: jvm-stable
+          digest: sha256:270e9113c71182d30929f253ff6ff49c63078f4556487a668602c4114c7d665a
+        probes:
+          liveness: {enabled: false}
+          readiness: {enabled: false}
+          startup: {enabled: false}
+        resources:
+          requests: {cpu: 25m, memory: 256Mi}
+          limits: {memory: 512Mi}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          seccompProfile: {type: RuntimeDefault}
+defaultPodOptions:
+  nodeSelector: {homelab.bupd.xyz/workload-pool: media}
+  securityContext: {fsGroup: 1000, fsGroupChangePolicy: OnRootMismatch}
+persistence:
+  config:
+    type: persistentVolumeClaim
+    existingClaim: janitorr-config
+    globalMounts: [{path: /config}]
+  logs:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 2Gi
+    storageClass: local-path
+    retain: true
+    globalMounts: [{path: /logs}]
+  media: {type: persistentVolumeClaim, existingClaim: media-data, globalMounts: [{path: /data}]}
+  tmp: {type: emptyDir, globalMounts: [{path: /tmp}]}

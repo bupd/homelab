@@ -132,6 +132,7 @@ validate-kustomize:
       platform/observability/kube-prometheus-stack \
       apps/media/jellyfin \
       apps/media/jellyfin/app \
+      apps/media/automation \
       apps/media/immich \
       apps/media/immich/database \
       apps/media/immich/app; do
@@ -157,6 +158,13 @@ validate-helm:
       --version 5.0.1 \
       --namespace media \
       --values apps/media/jellyfin/app/values.yaml >/dev/null
+    for values in apps/media/automation/values/*.yaml; do
+      release=$(basename "${values}" .yaml)
+      helm template "${release}" oci://ghcr.io/bjw-s-labs/helm/app-template \
+        --version 5.0.1 \
+        --namespace media \
+        --values "${values}" >/dev/null
+    done
     helm template flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
       --version 0.55.0 \
       --namespace flux-system \
