@@ -2,6 +2,16 @@ controllers:
   main:
     replicas: 1
     strategy: Recreate
+    initContainers:
+      wait-config:
+        image:
+          repository: docker.io/library/busybox
+          tag: 1.37.0
+          digest: sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+        command:
+          - /bin/sh
+          - -c
+          - until [ -s /config/application.yml ]; do sleep 5; done
     containers:
       main:
         image:
@@ -26,7 +36,10 @@ persistence:
   config:
     type: persistentVolumeClaim
     existingClaim: janitorr-config
-    globalMounts: [{path: /config}]
+    advancedMounts:
+      main:
+        main: [{path: /config}]
+        wait-config: [{path: /config}]
   logs:
     type: persistentVolumeClaim
     accessMode: ReadWriteOnce
