@@ -18,5 +18,7 @@ spec:
   sourceRef:
     kind: OCIRepository
     name: homelab
-  timeout: 30m
-  wait: true
+  # This is a terminal application boundary. Apply new desired state promptly
+  # and let helm-controller own health, retries, and recovery for each release.
+  timeout: 2m
+  wait: false
