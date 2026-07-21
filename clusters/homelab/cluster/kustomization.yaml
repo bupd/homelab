@@ -9,5 +9,6 @@ resources:
   - platform.yaml
   - immich-database.yaml
   - immich.yaml
+  - flux-operator.yaml
   - flux-ui.yaml
   - jellyfin.yaml

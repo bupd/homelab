@@ -4,11 +4,9 @@ kind: Kustomization
 resources:
   - source.yaml
   - release.yaml
-  - ingress.yaml
-  - cluster-user-auth.sops.yaml
 
 configMapGenerator:
-  - name: weave-gitops-values
+  - name: flux-operator-values
     namespace: flux-system
     files:
       - values.yaml

@@ -125,8 +125,9 @@ validate-kustomize:
       platform/controllers/cloudnative-pg \
       platform/networking \
       platform/networking/tailscale-operator \
-      platform/flux-ui \
-      platform/flux-ui/weave-gitops \
+      platform/flux-operator \
+      platform/flux-operator/operator \
+      platform/flux-operator/instance \
       platform/observability \
       platform/observability/kube-prometheus-stack \
       apps/media/jellyfin \
@@ -156,10 +157,10 @@ validate-helm:
       --version 5.0.1 \
       --namespace media \
       --values apps/media/jellyfin/app/values.yaml >/dev/null
-    helm template weave-gitops oci://ghcr.io/weaveworks/charts/weave-gitops \
-      --version 4.0.36 \
+    helm template flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
+      --version 0.55.0 \
       --namespace flux-system \
-      --values platform/flux-ui/weave-gitops/values.yaml >/dev/null
+      --values platform/flux-operator/operator/values.yaml >/dev/null
     helm repo add prometheus-community \
       https://prometheus-community.github.io/helm-charts --force-update >/dev/null
     helm template kube-prometheus-stack \

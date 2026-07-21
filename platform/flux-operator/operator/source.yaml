@@ -1,10 +1,10 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
-  name: weave-gitops-chart
+  name: flux-operator-chart
   namespace: flux-system
   annotations:
-    homelab.bupd.xyz/chart-version: 4.0.36
+    homelab.bupd.xyz/chart-version: 0.55.0
 spec:
   interval: 2m
   layerSelector:
@@ -12,6 +12,6 @@ spec:
     operation: copy
   provider: generic
   ref:
-    digest: sha256:7962f594c278045646e5d0c51498d4981a295ecda8e340c3f106d63505bdf828
+    digest: sha256:9e73c85b586f3649b317b215228ac35c1dd15a10dec87b8806f34bd7a22d42ae
   timeout: 2m
-  url: oci://ghcr.io/weaveworks/charts/weave-gitops
+  url: oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator

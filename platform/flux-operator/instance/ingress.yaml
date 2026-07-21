@@ -6,9 +6,9 @@ metadata:
 spec:
   defaultBackend:
     service:
-      name: weave-gitops
+      name: flux-operator
       port:
-        number: 9001
+        number: 9080
   ingressClassName: tailscale
   tls:
     - hosts:
