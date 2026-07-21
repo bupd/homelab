@@ -10,6 +10,8 @@ controllers:
           digest: sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
         command: [/bin/sh, /bootstrap/seed-bazarr-config.sh]
         env:
+          CONFIG_UID: "1000"
+          CONFIG_GID: "1000"
           ADMIN_PASSWORD:
             valueFrom:
               secretKeyRef: {name: media-automation-credentials, key: ADMIN_PASSWORD}

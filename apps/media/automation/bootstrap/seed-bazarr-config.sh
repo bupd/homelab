@@ -3,6 +3,8 @@ set -eu
 
 config=/config/config/config.yaml
 if [ -s "$config" ]; then
+  chown "${CONFIG_UID:-1000}:${CONFIG_GID:-1000}" /config /config/config "$config"
+  chmod 600 "$config"
   exit 0
 fi
 
@@ -33,3 +35,5 @@ radarr:
   ssl: false
   apikey: "${RADARR_API_KEY}"
 EOF
+chown "${CONFIG_UID:-1000}:${CONFIG_GID:-1000}" /config /config/config "$config"
+chmod 600 "$config"

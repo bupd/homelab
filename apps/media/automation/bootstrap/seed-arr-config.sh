@@ -3,6 +3,8 @@ set -eu
 
 config=/config/config.xml
 if [ -s "$config" ]; then
+  chown "${CONFIG_UID:-1000}:${CONFIG_GID:-1000}" /config "$config"
+  chmod 600 "$config"
   exit 0
 fi
 
@@ -24,3 +26,5 @@ cat >"$config" <<EOF
   <UpdateMechanism>Docker</UpdateMechanism>
 </Config>
 EOF
+chown "${CONFIG_UID:-1000}:${CONFIG_GID:-1000}" /config "$config"
+chmod 600 "$config"

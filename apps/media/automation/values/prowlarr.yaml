@@ -11,6 +11,8 @@ controllers:
         command: [/bin/sh, /bootstrap/seed-arr-config.sh]
         env:
           APP_PORT: "9696"
+          CONFIG_UID: "1000"
+          CONFIG_GID: "1000"
           API_KEY:
             valueFrom:
               secretKeyRef: {name: media-automation-credentials, key: PROWLARR_API_KEY}
