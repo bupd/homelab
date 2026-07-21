@@ -351,6 +351,7 @@ def main():
         configure_root_folders(name, port, api_version, api_key, roots)
         configure_prowlarr_application(name, port, api_key)
     configure_host_auth("prowlarr", 9696, "v1", "PROWLARR_API_KEY", "PROWLARR_ADMIN_PASSWORD")
+    configure_host_auth("sonarr", 8989, "v3", "SONARR_API_KEY", "SONARR_ADMIN_PASSWORD")
     configure_host_auth("whisparr", 6969, "v3", "WHISPARR_API_KEY", "WHISPARR_ADMIN_PASSWORD")
 
     account = jellyfin_login()
