@@ -135,11 +135,11 @@ def configure_prowlarr_application(name, port, api_key):
         request(f"{base}/applications", "POST", application, headers)
 
 
-def configure_whisparr_auth():
-    base = "http://whisparr:6969/api/v3"
-    headers = {"X-Api-Key": env("WHISPARR_API_KEY")}
+def configure_host_auth(name, port, api_version, api_key_env, password_env):
+    base = f"http://{name}:{port}/api/{api_version}"
+    headers = {"X-Api-Key": env(api_key_env)}
     host = request(f"{base}/config/host", headers=headers)
-    password = env("WHISPARR_ADMIN_PASSWORD")
+    password = env(password_env)
     host.update(
         {
             "authenticationMethod": "forms",
@@ -350,7 +350,8 @@ def main():
         configure_download_client(name, port, api_version, api_key, category)
         configure_root_folders(name, port, api_version, api_key, roots)
         configure_prowlarr_application(name, port, api_key)
-    configure_whisparr_auth()
+    configure_host_auth("prowlarr", 9696, "v1", "PROWLARR_API_KEY", "PROWLARR_ADMIN_PASSWORD")
+    configure_host_auth("whisparr", 6969, "v3", "WHISPARR_API_KEY", "WHISPARR_ADMIN_PASSWORD")
 
     account = jellyfin_login()
     jellyfin_api_key = ensure_jellyfin_key(account["AccessToken"])

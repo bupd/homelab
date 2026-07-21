@@ -18,7 +18,7 @@ controllers:
               secretKeyRef: {name: media-automation-credentials, key: PROWLARR_API_KEY}
           ADMIN_PASSWORD:
             valueFrom:
-              secretKeyRef: {name: media-automation-credentials, key: ADMIN_PASSWORD}
+              secretKeyRef: {name: media-automation-credentials, key: PROWLARR_ADMIN_PASSWORD}
     containers:
       main:
         image:
