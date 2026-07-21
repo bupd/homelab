@@ -135,6 +135,23 @@ def configure_prowlarr_application(name, port, api_key):
         request(f"{base}/applications", "POST", application, headers)
 
 
+def configure_whisparr_auth():
+    base = "http://whisparr:6969/api/v3"
+    headers = {"X-Api-Key": env("WHISPARR_API_KEY")}
+    host = request(f"{base}/config/host", headers=headers)
+    password = env("WHISPARR_ADMIN_PASSWORD")
+    host.update(
+        {
+            "authenticationMethod": "forms",
+            "authenticationRequired": "enabled",
+            "username": "admin",
+            "password": password,
+            "passwordConfirmation": password,
+        }
+    )
+    request(f"{base}/config/host/{host['id']}", "PUT", host, headers)
+
+
 def jellyfin_login():
     headers = {
         "Authorization": 'MediaBrowser Client="homelab-bootstrap", Device="Kubernetes", DeviceId="media-bootstrap", Version="1"'
@@ -333,6 +350,7 @@ def main():
         configure_download_client(name, port, api_version, api_key, category)
         configure_root_folders(name, port, api_version, api_key, roots)
         configure_prowlarr_application(name, port, api_key)
+    configure_whisparr_auth()
 
     account = jellyfin_login()
     jellyfin_api_key = ensure_jellyfin_key(account["AccessToken"])

@@ -18,7 +18,7 @@ controllers:
               secretKeyRef: {name: media-automation-credentials, key: WHISPARR_API_KEY}
           ADMIN_PASSWORD:
             valueFrom:
-              secretKeyRef: {name: media-automation-credentials, key: ADMIN_PASSWORD}
+              secretKeyRef: {name: media-automation-credentials, key: WHISPARR_ADMIN_PASSWORD}
     containers:
       main:
         image:
