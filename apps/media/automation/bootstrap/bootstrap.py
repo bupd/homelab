@@ -104,9 +104,19 @@ def configure_transmission():
     transmission_rpc(
         "session-set",
         {
+            "cache-size-mb": 16,
             "download-dir": "/data/downloads/complete",
+            "download-queue-enabled": True,
+            "download-queue-size": 1,
             "incomplete-dir": "/data/downloads/incomplete",
             "incomplete-dir-enabled": True,
+            "peer-limit-global": 120,
+            "peer-limit-per-torrent": 40,
+            "preallocation": 0,
+            "queue-stalled-enabled": True,
+            "queue-stalled-minutes": 5,
+            "speed-limit-down": 8192,
+            "speed-limit-down-enabled": True,
         },
     )
     torrents = transmission_rpc(

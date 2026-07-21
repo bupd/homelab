@@ -2,6 +2,20 @@ controllers:
   main:
     replicas: 1
     strategy: Recreate
+    initContainers:
+      seed-config:
+        image:
+          repository: docker.io/library/python
+          tag: 3.13-alpine
+          digest: sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0
+        command: [python3, /bootstrap/seed-transmission-config.py]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+          seccompProfile: {type: RuntimeDefault}
     containers:
       main:
         image:
@@ -20,11 +34,15 @@ controllers:
           PEERPORT: "51413"
           TRANSMISSION_RPC_AUTHENTICATION_REQUIRED: "true"
         probes:
-          liveness: &probe {enabled: true, type: TCP, port: 9091}
+          liveness: &probe
+            enabled: true
+            type: TCP
+            port: 9091
+            spec: {failureThreshold: 6, periodSeconds: 10, timeoutSeconds: 5}
           readiness: *probe
           startup:
             <<: *probe
-            spec: {failureThreshold: 30, periodSeconds: 10}
+            spec: {failureThreshold: 30, periodSeconds: 10, timeoutSeconds: 5}
         resources:
           requests: {cpu: 50m, memory: 128Mi}
           limits: {memory: 1Gi}
@@ -34,6 +52,7 @@ controllers:
 defaultPodOptions:
   nodeSelector: {homelab.bupd.xyz/workload-pool: media}
   securityContext: {fsGroup: 1000, fsGroupChangePolicy: OnRootMismatch}
+  terminationGracePeriodSeconds: 60
 service:
   main:
     controller: main
@@ -48,7 +67,10 @@ persistence:
     size: 5Gi
     storageClass: local-path
     retain: true
-    globalMounts: [{path: /config}]
+    advancedMounts:
+      main:
+        main: [{path: /config}]
+        seed-config: [{path: /config}]
   media:
     type: persistentVolumeClaim
     existingClaim: media-data
@@ -56,5 +78,14 @@ persistence:
       - path: /data
       - path: /downloads
         subPath: downloads
+  bootstrap:
+    type: configMap
+    name: media-bootstrap
+    advancedMounts:
+      main:
+        seed-config:
+          - path: /bootstrap/seed-transmission-config.py
+            subPath: seed-transmission-config.py
+            readOnly: true
   watch: {type: emptyDir, globalMounts: [{path: /watch}]}
   tmp: {type: emptyDir, globalMounts: [{path: /tmp}]}

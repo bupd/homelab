@@ -15,6 +15,7 @@ configMapGenerator:
       - bootstrap/bootstrap.py
       - bootstrap/seed-arr-config.sh
       - bootstrap/seed-bazarr-config.sh
+      - bootstrap/seed-transmission-config.py
       - bootstrap/application.yml
     options:
       labels:

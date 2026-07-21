@@ -16,7 +16,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: media-bootstrap-v15
+  name: media-bootstrap-v16
   namespace: media
 spec:
   activeDeadlineSeconds: 1800

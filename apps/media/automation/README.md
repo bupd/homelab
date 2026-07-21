@@ -21,7 +21,7 @@ and hardlinks. Transmission also mounts `/data/downloads` at `/downloads` for
 compatibility with per-torrent resume metadata created before the path was
 standardized. Do not add remote path mappings between these applications.
 
-`media-bootstrap-v15` creates the missing directories, connects Transmission to
+`media-bootstrap-v16` creates the missing directories, connects Transmission to
 the Arr applications, connects the Arr applications to Prowlarr, initializes
 Jellyseerr against Jellyfin, adds the TV/Anime/Adult libraries, and renders the
 Janitorr configuration. The Job is part of the Flux desired state; it must not
@@ -34,7 +34,9 @@ content policies differ.
 
 Transmission currently uses normal node egress. Its Kubernetes Service and
 shared paths are stable so a later namespace VPN gateway can be inserted
-without changing Arr download-client URLs.
+without changing Arr download-client URLs. Transmission runs one active
+download at a time with an 8 MiB/s global cap and minimal preallocation to keep
+random writes from saturating the USB NTFS media disk.
 
 All web interfaces are tailnet-only at `https://<app>.tail6c5ea9.ts.net`.
 The Arr, Bazarr, and Transmission administrator username is `admin`; retrieve
