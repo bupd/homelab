@@ -16,7 +16,7 @@ controllers:
           USER: admin
           PASS:
             valueFrom:
-              secretKeyRef: {name: media-automation-credentials, key: TRANSMISSION_ADMIN_PASSWORD}
+              secretKeyRef: {name: media-automation-credentials, key: ADMIN_PASSWORD}
           PEERPORT: "51413"
           TRANSMISSION_DOWNLOAD_DIR: /data/downloads/complete
           TRANSMISSION_INCOMPLETE_DIR: /data/downloads/incomplete

@@ -22,7 +22,7 @@ controllers:
             valueFrom:
               secretKeyRef:
                 name: media-automation-credentials
-                key: SONARR_ADMIN_PASSWORD
+                key: ADMIN_PASSWORD
     containers:
       main:
         image:

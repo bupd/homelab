@@ -19,7 +19,7 @@ The canonical path in every downloader and library manager is `/data`:
 Keeping downloads and libraries on the same filesystem allows atomic imports
 and hardlinks. Do not add remote path mappings between these applications.
 
-`media-bootstrap-v10` creates the missing directories, connects Transmission to
+`media-bootstrap-v11` creates the missing directories, connects Transmission to
 the Arr applications, connects the Arr applications to Prowlarr, initializes
 Jellyseerr against Jellyfin, adds the TV/Anime/Adult libraries, and renders the
 Janitorr configuration. The Job is part of the Flux desired state; it must not
@@ -36,7 +36,7 @@ without changing Arr download-client URLs.
 
 All web interfaces are tailnet-only at `https://<app>.tail6c5ea9.ts.net`.
 The Arr, Bazarr, and Transmission administrator username is `admin`; retrieve
-the generated password locally without printing it into Git history:
+the shared SOPS-encrypted password locally without printing it into Git history:
 
 ```bash
 sops decrypt apps/media/automation/credentials.sops.yaml \

@@ -17,11 +17,24 @@ def env(name):
     return value
 
 
-def request(url, method="GET", body=None, headers=None, opener=None, expected=(200, 201, 202, 204)):
-    payload = None if body is None else json.dumps(body).encode()
+def request(
+    url,
+    method="GET",
+    body=None,
+    headers=None,
+    opener=None,
+    expected=(200, 201, 202, 204),
+    content_type="application/json",
+):
+    if body is None:
+        payload = None
+    elif content_type == "application/x-www-form-urlencoded":
+        payload = urllib.parse.urlencode(body, doseq=True).encode()
+    else:
+        payload = json.dumps(body).encode()
     request_headers = {"Accept": "application/json"}
     if payload is not None:
-        request_headers["Content-Type"] = "application/json"
+        request_headers["Content-Type"] = content_type
     request_headers.update(headers or {})
     req = urllib.request.Request(url, data=payload, headers=request_headers, method=method)
     open_request = opener.open if opener else urllib.request.urlopen
@@ -80,7 +93,7 @@ def configure_download_client(name, port, api_version, api_key, category):
     set_field(fields, ["useSsl"], False)
     set_field(fields, ["urlBase"], "/transmission/")
     set_field(fields, ["username"], "admin")
-    set_field(fields, ["password"], env("TRANSMISSION_ADMIN_PASSWORD"))
+    set_field(fields, ["password"], env("ADMIN_PASSWORD"))
     set_field(fields, ["movieCategory", "tvCategory", "musicCategory", "category"], category)
     if existing:
         request(f"{base}/downloadclient/{existing['id']}", "PUT", client, headers)
@@ -150,6 +163,21 @@ def configure_host_auth(name, port, api_version, api_key_env, password_env):
         }
     )
     request(f"{base}/config/host/{host['id']}", "PUT", host, headers)
+
+
+def configure_bazarr_auth():
+    request(
+        "http://bazarr:6767/api/system/settings",
+        "POST",
+        {
+            "settings-auth-type": "form",
+            "settings-auth-username": "admin",
+            "settings-auth-password": env("ADMIN_PASSWORD"),
+        },
+        {"X-API-KEY": env("BAZARR_API_KEY")},
+        expected=(204,),
+        content_type="application/x-www-form-urlencoded",
+    )
 
 
 def jellyfin_login():
@@ -340,7 +368,7 @@ def main():
     )
     wait_json("http://prowlarr:9696/api/v1/system/status", {"X-Api-Key": env("PROWLARR_API_KEY")})
     transmission_auth = base64.b64encode(
-        f"admin:{env('TRANSMISSION_ADMIN_PASSWORD')}".encode()
+        f"admin:{env('ADMIN_PASSWORD')}".encode()
     ).decode()
     wait_json(
         "http://transmission:9091/transmission/web/",
@@ -350,9 +378,12 @@ def main():
         configure_download_client(name, port, api_version, api_key, category)
         configure_root_folders(name, port, api_version, api_key, roots)
         configure_prowlarr_application(name, port, api_key)
-    configure_host_auth("prowlarr", 9696, "v1", "PROWLARR_API_KEY", "PROWLARR_ADMIN_PASSWORD")
-    configure_host_auth("sonarr", 8989, "v3", "SONARR_API_KEY", "SONARR_ADMIN_PASSWORD")
-    configure_host_auth("whisparr", 6969, "v3", "WHISPARR_API_KEY", "WHISPARR_ADMIN_PASSWORD")
+    configure_host_auth("prowlarr", 9696, "v1", "PROWLARR_API_KEY", "ADMIN_PASSWORD")
+    configure_host_auth("radarr", 7878, "v3", "RADARR_API_KEY", "ADMIN_PASSWORD")
+    configure_host_auth("sonarr", 8989, "v3", "SONARR_API_KEY", "ADMIN_PASSWORD")
+    configure_host_auth("lidarr", 8686, "v1", "LIDARR_API_KEY", "ADMIN_PASSWORD")
+    configure_host_auth("whisparr", 6969, "v3", "WHISPARR_API_KEY", "ADMIN_PASSWORD")
+    configure_bazarr_auth()
 
     account = jellyfin_login()
     jellyfin_api_key = ensure_jellyfin_key(account["AccessToken"])
