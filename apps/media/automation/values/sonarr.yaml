@@ -49,7 +49,6 @@ controllers:
           limits: {memory: 1Gi}
         securityContext: &securityContext
           allowPrivilegeEscalation: false
-          capabilities: {drop: [ALL]}
           seccompProfile: {type: RuntimeDefault}
 defaultPodOptions: &podOptions
   nodeSelector:

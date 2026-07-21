@@ -79,8 +79,9 @@ patches:
       - op: add
         path: /spec/install
         value:
-          remediation:
-            retries: 3
+          strategy:
+            name: RetryOnFailure
+            retryInterval: 1m
       - op: add
         path: /spec/interval
         value: 2m
@@ -91,7 +92,6 @@ patches:
         path: /spec/upgrade
         value:
           cleanupOnFail: true
-          remediation:
-            remediateLastFailure: true
-            retries: 3
-            strategy: rollback
+          strategy:
+            name: RetryOnFailure
+            retryInterval: 1m

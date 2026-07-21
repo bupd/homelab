@@ -40,7 +40,6 @@ controllers:
           limits: {memory: 1Gi}
         securityContext:
           allowPrivilegeEscalation: false
-          capabilities: {drop: [ALL]}
           seccompProfile: {type: RuntimeDefault}
 defaultPodOptions:
   nodeSelector: {homelab.bupd.xyz/workload-pool: media}
