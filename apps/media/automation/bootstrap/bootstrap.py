@@ -120,10 +120,12 @@ def configure_transmission():
                 {"ids": [torrent["id"]], "location": new_path, "move": False},
             )
             repair_ids.append(torrent["id"])
-        elif torrent.get("error") == 3 and torrent.get("errorString", "").startswith(
-            "No data found!"
-        ):
-            repair_ids.append(torrent["id"])
+        else:
+            error = torrent.get("errorString", "")
+            if torrent.get("error") == 3 and (
+                error.startswith("No data found!") or "Permission denied (13)" in error
+            ):
+                repair_ids.append(torrent["id"])
 
     if not repair_ids:
         return

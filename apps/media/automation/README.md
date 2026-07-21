@@ -17,9 +17,11 @@ The canonical path in every downloader and library manager is `/data`:
 | Incomplete downloads | `/data/downloads/incomplete` |
 
 Keeping downloads and libraries on the same filesystem allows atomic imports
-and hardlinks. Do not add remote path mappings between these applications.
+and hardlinks. Transmission also mounts `/data/downloads` at `/downloads` for
+compatibility with per-torrent resume metadata created before the path was
+standardized. Do not add remote path mappings between these applications.
 
-`media-bootstrap-v13` creates the missing directories, connects Transmission to
+`media-bootstrap-v14` creates the missing directories, connects Transmission to
 the Arr applications, connects the Arr applications to Prowlarr, initializes
 Jellyseerr against Jellyfin, adds the TV/Anime/Adult libraries, and renders the
 Janitorr configuration. The Job is part of the Flux desired state; it must not

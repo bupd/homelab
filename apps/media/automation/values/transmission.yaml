@@ -49,6 +49,12 @@ persistence:
     storageClass: local-path
     retain: true
     globalMounts: [{path: /config}]
-  media: {type: persistentVolumeClaim, existingClaim: media-data, globalMounts: [{path: /data}]}
+  media:
+    type: persistentVolumeClaim
+    existingClaim: media-data
+    globalMounts:
+      - path: /data
+      - path: /downloads
+        subPath: downloads
   watch: {type: emptyDir, globalMounts: [{path: /watch}]}
   tmp: {type: emptyDir, globalMounts: [{path: /tmp}]}
