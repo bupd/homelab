@@ -127,6 +127,7 @@ def configure_prowlarr_application(name, port, api_key):
     application["syncLevel"] = "fullSync"
     fields = application.get("fields", [])
     set_field(fields, ["baseUrl"], f"http://{name}:{port}")
+    set_field(fields, ["prowlarrUrl"], "http://prowlarr:9696")
     set_field(fields, ["apiKey"], api_key)
     set_field(fields, ["syncCategories"], [1, 2, 3, 4, 5, 6, 7, 8])
     if existing:
