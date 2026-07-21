@@ -72,6 +72,54 @@ def set_field(fields, names, value):
             field["value"] = value
 
 
+def transmission_rpc(method, arguments=None):
+    url = "http://transmission:9091/transmission/rpc"
+    auth = base64.b64encode(f"admin:{env('ADMIN_PASSWORD')}".encode()).decode()
+    payload = json.dumps({"method": method, "arguments": arguments or {}}).encode()
+    session_id = None
+    for _ in range(2):
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Basic {auth}",
+            "Content-Type": "application/json",
+        }
+        if session_id:
+            headers["X-Transmission-Session-Id"] = session_id
+        req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                return json.loads(response.read())
+        except urllib.error.HTTPError as error:
+            if error.code == 409 and error.headers.get("X-Transmission-Session-Id"):
+                session_id = error.headers["X-Transmission-Session-Id"]
+                continue
+            detail = error.read().decode(errors="replace")
+            raise RuntimeError(f"Transmission RPC {method}: HTTP {error.code}: {detail}") from error
+    raise RuntimeError(f"Transmission RPC {method}: session negotiation failed")
+
+
+def configure_transmission():
+    transmission_rpc(
+        "session-set",
+        {
+            "download-dir": "/data/downloads/complete",
+            "incomplete-dir": "/data/downloads/incomplete",
+            "incomplete-dir-enabled": True,
+        },
+    )
+    torrents = transmission_rpc(
+        "torrent-get", {"fields": ["id", "downloadDir"]}
+    )["arguments"]["torrents"]
+    for torrent in torrents:
+        old_path = torrent.get("downloadDir", "")
+        if old_path == "/downloads/complete" or old_path.startswith("/downloads/complete/"):
+            new_path = "/data" + old_path
+            transmission_rpc(
+                "torrent-set-location",
+                {"ids": [torrent["id"]], "location": new_path, "move": False},
+            )
+
+
 def configure_download_client(name, port, api_version, api_key, category):
     base = f"http://{name}:{port}/api/{api_version}"
     headers = {"X-Api-Key": api_key}
@@ -374,6 +422,7 @@ def main():
         "http://transmission:9091/transmission/web/",
         {"Authorization": f"Basic {transmission_auth}"},
     )
+    configure_transmission()
     for name, port, api_version, api_key, roots, category in applications:
         configure_download_client(name, port, api_version, api_key, category)
         configure_root_folders(name, port, api_version, api_key, roots)

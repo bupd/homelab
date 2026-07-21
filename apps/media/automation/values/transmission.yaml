@@ -18,9 +18,6 @@ controllers:
             valueFrom:
               secretKeyRef: {name: media-automation-credentials, key: ADMIN_PASSWORD}
           PEERPORT: "51413"
-          TRANSMISSION_DOWNLOAD_DIR: /data/downloads/complete
-          TRANSMISSION_INCOMPLETE_DIR: /data/downloads/incomplete
-          TRANSMISSION_INCOMPLETE_DIR_ENABLED: "true"
           TRANSMISSION_RPC_AUTHENTICATION_REQUIRED: "true"
         probes:
           liveness: &probe {enabled: true, type: TCP, port: 9091}
