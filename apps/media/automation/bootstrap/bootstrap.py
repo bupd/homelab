@@ -297,7 +297,7 @@ def render_janitorr(jellyfin_api_key):
     destination = pathlib.Path("/janitorr/application.yml")
     temporary = destination.with_suffix(".tmp")
     temporary.write_text(template)
-    temporary.chmod(0o600)
+    temporary.chmod(0o640)
     temporary.replace(destination)
 
 
