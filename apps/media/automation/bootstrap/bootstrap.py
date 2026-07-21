@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import base64
 import http.cookiejar
 import json
 import os
@@ -321,7 +322,13 @@ def main():
         ("whisparr", 6969, "v3", env("WHISPARR_API_KEY"), ["/data/Adult"], "whisparr"),
     )
     wait_json("http://prowlarr:9696/api/v1/system/status", {"X-Api-Key": env("PROWLARR_API_KEY")})
-    wait_json("http://transmission:9091/transmission/web/")
+    transmission_auth = base64.b64encode(
+        f"admin:{env('ADMIN_PASSWORD')}".encode()
+    ).decode()
+    wait_json(
+        "http://transmission:9091/transmission/web/",
+        {"Authorization": f"Basic {transmission_auth}"},
+    )
     for name, port, api_version, api_key, roots, category in applications:
         configure_download_client(name, port, api_version, api_key, category)
         configure_root_folders(name, port, api_version, api_key, roots)

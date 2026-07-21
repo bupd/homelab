@@ -23,7 +23,7 @@ controllers:
           TRANSMISSION_INCOMPLETE_DIR_ENABLED: "true"
           TRANSMISSION_RPC_AUTHENTICATION_REQUIRED: "true"
         probes:
-          liveness: &probe {enabled: true, type: HTTP, path: /transmission/web/, port: 9091}
+          liveness: &probe {enabled: true, type: TCP, port: 9091}
           readiness: *probe
           startup:
             <<: *probe
