@@ -72,6 +72,11 @@ The worker receives:
   `/var/lib/nvidia/k3s-run`; and
 - persistent K3s state under `/var/lib/rancher/k3s-media-worker`.
 
+The Quadlet disables Podman's per-container PID cap because this container is
+itself a Kubernetes node. The generated systemd service still applies the
+host's `TasksMax`, while nested Pods are governed by Kubernetes resource and
+node-pressure controls.
+
 The media disk is NTFS. Put bulk photos, videos, and downloads there. Do not
 put databases there. Put databases and application configuration on ext4.
 

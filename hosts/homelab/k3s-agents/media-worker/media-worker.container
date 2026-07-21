@@ -10,6 +10,9 @@ Image=docker.io/rancher/k3s:v1.36.2-k3s1
 Pull=never
 ContainerName=media-worker
 HostName=media-worker
+# This container is a Kubernetes node, so Podman's per-container default of
+# 2048 PIDs is too small for kubelet, containerd, and all nested workloads.
+PidsLimit=-1
 
 Network=media-worker.network
 IP=10.89.0.2
