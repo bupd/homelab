@@ -99,6 +99,8 @@ def transmission_rpc(method, arguments=None):
 
 
 def configure_transmission():
+    migration_marker = pathlib.Path("/data/.media-bootstrap/transmission-download-path-v2")
+    first_path_migration = not migration_marker.exists()
     transmission_rpc(
         "session-set",
         {
@@ -108,9 +110,11 @@ def configure_transmission():
         },
     )
     torrents = transmission_rpc(
-        "torrent-get", {"fields": ["id", "downloadDir", "error", "errorString"]}
+        "torrent-get",
+        {"fields": ["id", "downloadDir", "error", "errorString", "status"]},
     )["arguments"]["torrents"]
-    repair_ids = []
+    verify_ids = set()
+    resume_ids = set()
     for torrent in torrents:
         old_path = torrent.get("downloadDir", "")
         if old_path == "/downloads/complete" or old_path.startswith("/downloads/complete/"):
@@ -119,28 +123,57 @@ def configure_transmission():
                 "torrent-set-location",
                 {"ids": [torrent["id"]], "location": new_path, "move": False},
             )
-            repair_ids.append(torrent["id"])
+            verify_ids.add(torrent["id"])
+            resume_ids.add(torrent["id"])
         else:
             error = torrent.get("errorString", "")
             if torrent.get("error") == 3 and (
                 error.startswith("No data found!") or "Permission denied (13)" in error
             ):
-                repair_ids.append(torrent["id"])
+                verify_ids.add(torrent["id"])
+                resume_ids.add(torrent["id"])
+            elif (
+                first_path_migration
+                and torrent.get("status") == 0
+                and old_path.startswith("/data/downloads/complete")
+            ):
+                resume_ids.add(torrent["id"])
 
-    if not repair_ids:
-        return
+    if verify_ids:
+        transmission_rpc("torrent-verify", {"ids": sorted(verify_ids)})
+        time.sleep(1)
+        deadline = time.monotonic() + 300
+        while time.monotonic() < deadline:
+            repairing = transmission_rpc(
+                "torrent-get",
+                {"ids": sorted(verify_ids), "fields": ["id", "status", "error"]},
+            )["arguments"]["torrents"]
+            if all(
+                torrent["status"] not in (1, 2) and torrent["error"] == 0
+                for torrent in repairing
+            ):
+                break
+            time.sleep(2)
+        else:
+            raise RuntimeError("timed out verifying torrents after download path repair")
 
-    transmission_rpc("torrent-verify", {"ids": repair_ids})
-    deadline = time.monotonic() + 300
-    while time.monotonic() < deadline:
-        repairing = transmission_rpc(
-            "torrent-get", {"ids": repair_ids, "fields": ["id", "status"]}
-        )["arguments"]["torrents"]
-        if all(torrent["status"] not in (1, 2) for torrent in repairing):
-            transmission_rpc("torrent-start", {"ids": repair_ids})
-            return
-        time.sleep(2)
-    raise RuntimeError("timed out verifying torrents after download path repair")
+    if resume_ids:
+        resume_ids = sorted(resume_ids)
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            transmission_rpc("torrent-start", {"ids": resume_ids})
+            time.sleep(2)
+            resumed = transmission_rpc(
+                "torrent-get", {"ids": resume_ids, "fields": ["id", "status", "error"]}
+            )["arguments"]["torrents"]
+            if all(torrent["status"] not in (0, 1, 2) for torrent in resumed):
+                break
+        else:
+            raise RuntimeError("timed out resuming torrents after download path repair")
+
+    if first_path_migration:
+        migration_marker.parent.mkdir(parents=True, exist_ok=True)
+        migration_marker.write_text("complete\n")
 
 
 def configure_download_client(name, port, api_version, api_key, category):
