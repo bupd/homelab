@@ -6,8 +6,8 @@ resources:
   - policies.yaml
   - networking.yaml
   - observability.yaml
-  # Disabled for the initial platform-only rollout.
-  # Uncomment all three lines below to enable CloudNativePG and Immich.
   - platform.yaml
   - immich-database.yaml
   - immich.yaml
+  - flux-ui.yaml
+  - jellyfin.yaml

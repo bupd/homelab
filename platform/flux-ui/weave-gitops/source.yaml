@@ -1,0 +1,17 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: weave-gitops-chart
+  namespace: flux-system
+  annotations:
+    homelab.bupd.xyz/chart-version: 4.0.36
+spec:
+  interval: 2m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  provider: generic
+  ref:
+    digest: sha256:7962f594c278045646e5d0c51498d4981a295ecda8e340c3f106d63505bdf828
+  timeout: 2m
+  url: oci://ghcr.io/weaveworks/charts/weave-gitops

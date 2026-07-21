@@ -1,0 +1,17 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: jellyfin-chart
+  namespace: media
+  annotations:
+    homelab.bupd.xyz/chart-version: 5.0.1
+spec:
+  interval: 2m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  provider: generic
+  ref:
+    digest: sha256:70a7cb6766eb468068c2c1700c8450253070dc671a9fbbd1a6346a66545e2b2b
+  timeout: 2m
+  url: oci://ghcr.io/bjw-s-labs/helm/app-template

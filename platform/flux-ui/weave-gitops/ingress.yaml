@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flux
+  namespace: flux-system
+spec:
+  defaultBackend:
+    service:
+      name: weave-gitops
+      port:
+        number: 9001
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - flux

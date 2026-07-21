@@ -125,8 +125,12 @@ validate-kustomize:
       platform/controllers/cloudnative-pg \
       platform/networking \
       platform/networking/tailscale-operator \
+      platform/flux-ui \
+      platform/flux-ui/weave-gitops \
       platform/observability \
       platform/observability/kube-prometheus-stack \
+      apps/media/jellyfin \
+      apps/media/jellyfin/app \
       apps/media/immich \
       apps/media/immich/database \
       apps/media/immich/app; do
@@ -148,6 +152,14 @@ validate-helm:
       --version 0.13.1 \
       --namespace immich \
       --values apps/media/immich/app/values.yaml >/dev/null
+    helm template jellyfin oci://ghcr.io/bjw-s-labs/helm/app-template \
+      --version 5.0.1 \
+      --namespace media \
+      --values apps/media/jellyfin/app/values.yaml >/dev/null
+    helm template weave-gitops oci://ghcr.io/weaveworks/charts/weave-gitops \
+      --version 4.0.36 \
+      --namespace flux-system \
+      --values platform/flux-ui/weave-gitops/values.yaml >/dev/null
     helm repo add prometheus-community \
       https://prometheus-community.github.io/helm-charts --force-update >/dev/null
     helm template kube-prometheus-stack \
@@ -166,7 +178,7 @@ validate-yaml:
     #!/usr/bin/env bash
     while IFS= read -r -d '' file; do
       yq eval '.' "${file}" >/dev/null
-    done < <(find clusters/homelab apps/media/immich platform .github/workflows \
+    done < <(find clusters/homelab apps platform .github/workflows \
       -type f \( -name '*.yaml' -o -name '*.yml' \) -print0)
 
 # Check SOPS encryption. Hunt plaintext secrets.
