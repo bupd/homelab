@@ -108,8 +108,9 @@ def configure_transmission():
         },
     )
     torrents = transmission_rpc(
-        "torrent-get", {"fields": ["id", "downloadDir"]}
+        "torrent-get", {"fields": ["id", "downloadDir", "error", "errorString"]}
     )["arguments"]["torrents"]
+    repair_ids = []
     for torrent in torrents:
         old_path = torrent.get("downloadDir", "")
         if old_path == "/downloads/complete" or old_path.startswith("/downloads/complete/"):
@@ -118,6 +119,26 @@ def configure_transmission():
                 "torrent-set-location",
                 {"ids": [torrent["id"]], "location": new_path, "move": False},
             )
+            repair_ids.append(torrent["id"])
+        elif torrent.get("error") == 3 and torrent.get("errorString", "").startswith(
+            "No data found!"
+        ):
+            repair_ids.append(torrent["id"])
+
+    if not repair_ids:
+        return
+
+    transmission_rpc("torrent-verify", {"ids": repair_ids})
+    deadline = time.monotonic() + 300
+    while time.monotonic() < deadline:
+        repairing = transmission_rpc(
+            "torrent-get", {"ids": repair_ids, "fields": ["id", "status"]}
+        )["arguments"]["torrents"]
+        if all(torrent["status"] not in (1, 2) for torrent in repairing):
+            transmission_rpc("torrent-start", {"ids": repair_ids})
+            return
+        time.sleep(2)
+    raise RuntimeError("timed out verifying torrents after download path repair")
 
 
 def configure_download_client(name, port, api_version, api_key, category):
