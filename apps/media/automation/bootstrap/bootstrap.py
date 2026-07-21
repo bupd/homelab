@@ -80,7 +80,7 @@ def configure_download_client(name, port, api_version, api_key, category):
     set_field(fields, ["useSsl"], False)
     set_field(fields, ["urlBase"], "/transmission/")
     set_field(fields, ["username"], "admin")
-    set_field(fields, ["password"], env("ADMIN_PASSWORD"))
+    set_field(fields, ["password"], env("TRANSMISSION_ADMIN_PASSWORD"))
     set_field(fields, ["movieCategory", "tvCategory", "musicCategory", "category"], category)
     if existing:
         request(f"{base}/downloadclient/{existing['id']}", "PUT", client, headers)
@@ -340,7 +340,7 @@ def main():
     )
     wait_json("http://prowlarr:9696/api/v1/system/status", {"X-Api-Key": env("PROWLARR_API_KEY")})
     transmission_auth = base64.b64encode(
-        f"admin:{env('ADMIN_PASSWORD')}".encode()
+        f"admin:{env('TRANSMISSION_ADMIN_PASSWORD')}".encode()
     ).decode()
     wait_json(
         "http://transmission:9091/transmission/web/",
