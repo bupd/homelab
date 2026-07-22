@@ -34,15 +34,30 @@ controllers:
           PEERPORT: "51413"
           TRANSMISSION_RPC_AUTHENTICATION_REQUIRED: "true"
         probes:
-          liveness: &probe
+          liveness: &rpcProbe
             enabled: true
-            type: TCP
-            port: 9091
-            spec: {failureThreshold: 6, periodSeconds: 10, timeoutSeconds: 5}
-          readiness: *probe
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -lc
+                  - timeout 10 transmission-remote localhost:9091 --auth "admin:${PASS}" --session-info >/dev/null
+              failureThreshold: 6
+              periodSeconds: 10
+              timeoutSeconds: 12
+          readiness: *rpcProbe
           startup:
-            <<: *probe
-            spec: {failureThreshold: 30, periodSeconds: 10, timeoutSeconds: 5}
+            <<: *rpcProbe
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -lc
+                  - timeout 10 transmission-remote localhost:9091 --auth "admin:${PASS}" --session-info >/dev/null
+              failureThreshold: 30
+              periodSeconds: 10
+              timeoutSeconds: 12
         resources:
           requests: {cpu: 50m, memory: 128Mi}
           limits: {memory: 1Gi}
