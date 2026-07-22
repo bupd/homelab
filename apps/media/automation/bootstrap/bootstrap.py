@@ -321,6 +321,7 @@ def ensure_jellyfin_libraries(access_token):
     headers = {"X-Emby-Token": access_token}
     existing = {item["Name"] for item in request("http://jellyfin:8096/Library/VirtualFolders", headers=headers)}
     libraries = (
+        ("Music", "music", "/data/Music"),
         ("Shows", "tvshows", "/data/TV"),
         ("Anime", "tvshows", "/data/Anime"),
         ("Adult", "movies", "/data/Adult"),
@@ -467,6 +468,7 @@ def main():
         "/data/downloads/complete/sonarr",
         "/data/downloads/complete/lidarr",
         "/data/downloads/complete/whisparr",
+        "/data/Music",
         "/data/TV",
         "/data/Anime",
         "/data/Adult",

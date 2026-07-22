@@ -21,9 +21,9 @@ and hardlinks. Transmission also mounts `/data/downloads` at `/downloads` for
 compatibility with per-torrent resume metadata created before the path was
 standardized. Do not add remote path mappings between these applications.
 
-`media-bootstrap-v16` creates the missing directories, connects Transmission to
+`media-bootstrap-v17` creates the missing directories, connects Transmission to
 the Arr applications, connects the Arr applications to Prowlarr, initializes
-Jellyseerr against Jellyfin, adds the TV/Anime/Adult libraries, and renders the
+Jellyseerr against Jellyfin, adds the Music/TV/Anime/Adult libraries, and renders the
 Janitorr configuration. The Job is part of the Flux desired state; it must not
 be run manually.
 
