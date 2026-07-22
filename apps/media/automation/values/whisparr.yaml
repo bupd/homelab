@@ -1,6 +1,6 @@
 controllers:
   main:
-    replicas: 1
+    replicas: 0
     strategy: Recreate
     initContainers:
       seed-config:

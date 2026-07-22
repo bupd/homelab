@@ -37,6 +37,7 @@ metadata:
   name: whisparr
   namespace: media
 spec:
+  suspend: true
   valuesFrom:
     - kind: ConfigMap
       name: whisparr-values
