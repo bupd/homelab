@@ -1,6 +1,7 @@
 controllers:
   main:
-    replicas: 1
+    # Keep Whisparr offline until individual media is deliberately added again.
+    replicas: 0
     strategy: Recreate
     initContainers:
       seed-config:
