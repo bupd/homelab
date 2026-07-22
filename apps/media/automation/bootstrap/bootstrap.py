@@ -107,7 +107,7 @@ def configure_transmission():
             "cache-size-mb": 16,
             "download-dir": "/data/downloads/complete",
             "download-queue-enabled": True,
-            "download-queue-size": 1,
+            "download-queue-size": 20,
             "incomplete-dir": "/data/downloads/incomplete",
             "incomplete-dir-enabled": True,
             "peer-limit-global": 120,

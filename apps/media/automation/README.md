@@ -34,8 +34,8 @@ content policies differ.
 
 Transmission currently uses normal node egress. Its Kubernetes Service and
 shared paths are stable so a later namespace VPN gateway can be inserted
-without changing Arr download-client URLs. Transmission runs one active
-download at a time with an 8 MiB/s global cap and minimal preallocation to keep
+without changing Arr download-client URLs. Transmission runs up to 20 active
+downloads at a time with an 8 MiB/s global cap and minimal preallocation to keep
 random writes from saturating the USB NTFS media disk.
 
 All web interfaces are tailnet-only at `https://<app>.tail6c5ea9.ts.net`.
