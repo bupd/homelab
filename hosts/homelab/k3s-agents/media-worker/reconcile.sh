@@ -17,6 +17,8 @@ readonly WORKER_ENSURE_SERVICE="${SCRIPT_DIR}/media-worker-ensure.service"
 readonly WORKER_CDI_REFRESH="${SCRIPT_DIR}/refresh-nvidia-cdi.sh"
 readonly WORKER_FSTAB="${SCRIPT_DIR}/media-worker.fstab"
 readonly WORKER_POLICY="${REPO_ROOT}/clusters/homelab/nodes/media-worker/node-policy.yaml"
+readonly K3S_TIME_SYNC_DROPIN_DIR="/etc/systemd/system/k3s.service.d"
+readonly K3S_TIME_SYNC_DROPIN="${K3S_TIME_SYNC_DROPIN_DIR}/10-time-sync.conf"
 readonly KUBECTL=(k3s kubectl)
 
 log() {
@@ -83,6 +85,26 @@ reconcile_media_mount() {
     install -m 0644 "${fstab_temp}" /etc/fstab
   fi
   rm -f "${fstab_temp}"
+}
+
+reconcile_time_sync_ordering() {
+  local dropin_temp
+
+  install -d -m 0755 "${K3S_TIME_SYNC_DROPIN_DIR}"
+  dropin_temp="$(mktemp)"
+  printf '%s\n' \
+    '[Unit]' \
+    'Wants=systemd-time-wait-sync.service time-sync.target' \
+    'After=systemd-time-wait-sync.service time-sync.target' \
+    >"${dropin_temp}"
+
+  if [[ ! -f ${K3S_TIME_SYNC_DROPIN} ]] || \
+     ! cmp -s "${dropin_temp}" "${K3S_TIME_SYNC_DROPIN}"; then
+    install -m 0644 "${dropin_temp}" "${K3S_TIME_SYNC_DROPIN}"
+  fi
+  rm -f "${dropin_temp}"
+
+  systemctl enable systemd-time-wait-sync.service >/dev/null
 }
 
 wait_for_api() {
@@ -207,6 +229,9 @@ server_changed=false
 
 log "stopping the accidental native K3s agent"
 systemctl disable --now k3s-agent.service 2>/dev/null || true
+
+log "installing time-sync ordering"
+reconcile_time_sync_ordering
 
 log "creating host directories"
 install -d -m 0755 \

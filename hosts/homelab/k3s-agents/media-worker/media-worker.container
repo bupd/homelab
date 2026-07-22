@@ -2,7 +2,8 @@
 Description=K3s media-worker agent
 Documentation=https://docs.k3s.io/
 Wants=network-online.target
-After=network-online.target k3s.service
+Wants=systemd-time-wait-sync.service time-sync.target
+After=network-online.target systemd-time-wait-sync.service time-sync.target k3s.service
 Requires=k3s.service
 
 [Container]

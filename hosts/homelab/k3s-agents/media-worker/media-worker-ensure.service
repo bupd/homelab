@@ -2,8 +2,8 @@
 Description=Ensure the K3s media-worker starts after delayed storage
 Documentation=https://docs.k3s.io/
 Requires=k3s.service
-After=k3s.service network-online.target
-Wants=network-online.target
+After=systemd-time-wait-sync.service time-sync.target k3s.service network-online.target
+Wants=systemd-time-wait-sync.service time-sync.target network-online.target
 StartLimitIntervalSec=0
 
 [Service]
