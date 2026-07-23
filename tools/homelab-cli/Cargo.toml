@@ -1,0 +1,11 @@
+[package]
+name = "homelab"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "A small, safe control switch for the homelab"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+clap = { version = "4.5.53", features = ["derive"] }
+owo-colors = { version = "4.2.3", features = ["supports-colors"] }

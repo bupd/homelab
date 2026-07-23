@@ -17,6 +17,9 @@ readonly WORKER_ENSURE_SERVICE="${SCRIPT_DIR}/media-worker-ensure.service"
 readonly WORKER_CDI_REFRESH="${SCRIPT_DIR}/refresh-nvidia-cdi.sh"
 readonly WORKER_FSTAB="${SCRIPT_DIR}/media-worker.fstab"
 readonly WORKER_POLICY="${REPO_ROOT}/clusters/homelab/nodes/media-worker/node-policy.yaml"
+readonly HOMELAB_CLI_MANIFEST="${REPO_ROOT}/tools/homelab-cli/Cargo.toml"
+readonly HOMELAB_CLI_BINARY="${REPO_ROOT}/tools/homelab-cli/target/release/homelab"
+readonly HOMELAB_SUDOERS="${SCRIPT_DIR}/homelab.sudoers"
 readonly K3S_TIME_SYNC_DROPIN_DIR="/etc/systemd/system/k3s.service.d"
 readonly K3S_TIME_SYNC_DROPIN="${K3S_TIME_SYNC_DROPIN_DIR}/10-time-sync.conf"
 readonly KUBECTL=(k3s kubectl)
@@ -105,6 +108,16 @@ reconcile_time_sync_ordering() {
   rm -f "${dropin_temp}"
 
   systemctl enable systemd-time-wait-sync.service >/dev/null
+}
+
+install_homelab_cli() {
+  log "building and installing the homelab control CLI"
+  cargo build --locked --release --manifest-path "${HOMELAB_CLI_MANIFEST}"
+  install -d -m 0755 /usr/local/lib/homelab
+  install -m 0755 "${HOMELAB_CLI_BINARY}" /usr/local/bin/homelab
+  install -m 0755 "${HOMELAB_CLI_BINARY}" /usr/local/lib/homelab/homelab-admin
+  install -m 0440 "${HOMELAB_SUDOERS}" /etc/sudoers.d/homelab
+  visudo -cf /etc/sudoers.d/homelab >/dev/null
 }
 
 wait_for_api() {
@@ -198,7 +211,8 @@ remove_control_plane_pods() {
 [[ ${EUID} -eq 0 ]] || die "run this script with sudo"
 
 for command in \
-  install cmp mktemp systemctl systemd-analyze podman k3s nvidia-ctk grep \
+  cargo install cmp mktemp systemctl systemd-analyze podman k3s nvidia-ctk grep \
+  visudo \
   awk findmnt mountpoint modprobe sysctl; do
   require_command "${command}"
 done
@@ -213,6 +227,8 @@ for file in \
   "${WORKER_ENSURE_SERVICE}" \
   "${WORKER_CDI_REFRESH}" \
   "${WORKER_FSTAB}" \
+  "${HOMELAB_CLI_MANIFEST}" \
+  "${HOMELAB_SUDOERS}" \
   "${WORKER_POLICY}"; do
   [[ -f ${file} ]] || die "missing declarative file: ${file}"
 done
@@ -232,6 +248,8 @@ systemctl disable --now k3s-agent.service 2>/dev/null || true
 
 log "installing time-sync ordering"
 reconcile_time_sync_ordering
+
+install_homelab_cli
 
 log "creating host directories"
 install -d -m 0755 \
@@ -351,9 +369,7 @@ systemd-analyze verify \
   /run/systemd/generator/media-worker.service \
   /run/systemd/generator/media-worker-network.service \
   /etc/systemd/system/media-worker-ensure.service
-[[ "$(systemctl show media-worker.service -p WantedBy --value)" == *multi-user.target* ]] || \
-  die "media-worker.service is not linked to multi-user.target"
-systemctl enable media-worker-ensure.service
+systemctl disable media-worker-ensure.service >/dev/null || true
 
 # Older revisions did not persist /etc/rancher/node/password. Recover only
 # when the local persistent identity is absent and a stale server identity is
@@ -378,7 +394,7 @@ else
   wait_for_worker
 fi
 
-systemctl enable k3s.service
+systemctl disable k3s.service >/dev/null || true
 if [[ ${server_changed} == true ]]; then
   log "installing the agentless control-plane configuration"
   install -m 0600 "${SERVER_CONFIG}" /etc/rancher/k3s/config.yaml
@@ -417,6 +433,9 @@ podman exec "${WORKER_NAME}" test -d /home/bupd/hdd/data || \
 podman exec "${WORKER_NAME}" /bin/sh -c \
   'test -c /dev/nvidia0 && ls /usr/lib/libnvidia-encode.so.* >/dev/null' || \
   die "NVIDIA devices or driver libraries are unavailable inside ${WORKER_NAME}"
+
+log "leaving the homelab under manual control"
+systemctl disable k3s.service media-worker.service media-worker-ensure.service >/dev/null
 
 log "done"
 "${KUBECTL[@]}" get nodes -o wide

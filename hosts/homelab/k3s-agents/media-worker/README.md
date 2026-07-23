@@ -58,7 +58,26 @@ sudo hosts/homelab/k3s-agents/media-worker/reconcile.sh
 ```
 
 Run the same command again after changing one of these files. The script is
-idempotent.
+idempotent. It expects the homelab to already be running; run homelab up
+first when it needs to contact Kubernetes.
+
+## Daily control
+
+The host does not start Kubernetes automatically at boot. The worker Quadlet is
+intentionally not linked to a boot target. Use:
+
+    homelab up
+    homelab down
+    homelab status
+
+Every command is idempotent. Up enables the media automount, mounts the disk,
+and starts the control plane and worker. Down stops every Pod by stopping the
+worker first, then stops the control plane, flushes pending writes, disables
+the automount, and cleanly unmounts the media disk.
+
+The existing computer shutdown workflow remains separate:
+
+    powerkill && poweroff
 
 ## Storage and GPU
 

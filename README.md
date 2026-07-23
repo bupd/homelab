@@ -127,6 +127,11 @@ sudo k3s kubectl get pods -A -o wide
 sudo podman ps --filter name=media-worker
 ```
 
+After the host reconciler completes, Kubernetes is intentionally disabled at
+boot. Use homelab up to start it, homelab down to stop all workloads and release
+host resources, and homelab status to inspect it. These commands are safe to
+repeat.
+
 Expected result: the only Kubernetes Node is `media-worker`, and it is `Ready`.
 `archbtw` must not appear as a Node.
 

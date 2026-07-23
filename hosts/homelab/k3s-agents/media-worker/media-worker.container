@@ -75,6 +75,3 @@ ExecStartPre=/usr/local/lib/homelab/refresh-nvidia-cdi.sh
 Restart=always
 RestartSec=5
 TimeoutStartSec=900
-
-[Install]
-WantedBy=multi-user.target
