@@ -1,0 +1,6 @@
+# Allow the local homelab owner to run only the fixed Rust CLI actions without
+# a password. The user-facing binary always invokes this root-owned helper.
+bupd ALL=(root) NOPASSWD: /usr/local/lib/homelab/homelab-admin --run-as-admin up, \
+    /usr/local/lib/homelab/homelab-admin --run-as-admin media, \
+    /usr/local/lib/homelab/homelab-admin --run-as-admin down, \
+    /usr/local/lib/homelab/homelab-admin --run-as-admin status

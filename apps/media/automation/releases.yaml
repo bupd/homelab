@@ -1,0 +1,98 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: radarr
+  namespace: media
+spec:
+  valuesFrom:
+    - kind: ConfigMap
+      name: radarr-values
+      valuesKey: values.yaml
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sonarr
+  namespace: media
+spec:
+  valuesFrom:
+    - kind: ConfigMap
+      name: sonarr-values
+      valuesKey: values.yaml
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: lidarr
+  namespace: media
+spec:
+  valuesFrom:
+    - kind: ConfigMap
+      name: lidarr-values
+      valuesKey: values.yaml
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: whisparr
+  namespace: media
+spec:
+  valuesFrom:
+    - kind: ConfigMap
+      name: whisparr-values
+      valuesKey: values.yaml
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: prowlarr
+  namespace: media
+spec:
+  valuesFrom:
+    - kind: ConfigMap
+      name: prowlarr-values
+      valuesKey: values.yaml
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: transmission
+  namespace: media
+spec:
+  valuesFrom:
+    - kind: ConfigMap
+      name: transmission-values
+      valuesKey: values.yaml
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: bazarr
+  namespace: media
+spec:
+  valuesFrom:
+    - kind: ConfigMap
+      name: bazarr-values
+      valuesKey: values.yaml
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: jellyseerr
+  namespace: media
+spec:
+  valuesFrom:
+    - kind: ConfigMap
+      name: jellyseerr-values
+      valuesKey: values.yaml
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: janitorr
+  namespace: media
+spec:
+  valuesFrom:
+    - kind: ConfigMap
+      name: janitorr-values
+      valuesKey: values.yaml

@@ -1,0 +1,41 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: immich-database
+  namespace: immich
+spec:
+  affinity:
+    enablePodAntiAffinity: true
+    nodeSelector:
+      homelab.bupd.xyz/workload-pool: media
+    topologyKey: kubernetes.io/hostname
+  bootstrap:
+    initdb:
+      database: immich
+      owner: immich
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-standard-trixie
+  instances: 1
+  monitoring:
+    enablePodMonitor: true
+  postgresUID: 26
+  postgresGID: 26
+  postgresql:
+    extensions:
+      - name: vchord
+        image:
+          reference: ghcr.io/tensorchord/vchord-scratch:pg18-v1.1.1
+        dynamic_library_path:
+          - /usr/lib/postgresql/18/lib
+        extension_control_path:
+          - /usr/share/postgresql/18/
+    shared_preload_libraries:
+      - vchord.so
+  resources:
+    limits:
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  storage:
+    size: 50Gi
+    storageClass: local-path

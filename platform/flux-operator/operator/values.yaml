@@ -1,0 +1,42 @@
+fullnameOverride: flux-operator
+
+installCRDs: true
+
+image:
+  repository: ghcr.io/controlplaneio-fluxcd/flux-operator
+  tag: v0.55.0@sha256:5221a2faf9c1e1b1d6212aa96f5c4df2fdc4977ae206f2636dd202b79583ffb5
+  imagePullPolicy: IfNotPresent
+
+nodeSelector:
+  homelab.bupd.xyz/workload-pool: media
+
+resources:
+  limits:
+    cpu: "1"
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+strategy:
+  type: Recreate
+
+web:
+  enabled: true
+  config:
+    baseURL: https://flux.tail6c5ea9.ts.net
+    authentication:
+      type: Anonymous
+      anonymous:
+        username: flux-viewer
+        groups:
+          - flux-readonly
+    search:
+      cached: true
+  networkPolicy:
+    create: true
+  rbac:
+    createRoles: true
+    createAggregation: false
+  ingress:
+    enabled: false

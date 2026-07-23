@@ -1,0 +1,17 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: immich-chart
+  namespace: immich
+  annotations:
+    homelab.bupd.xyz/chart-version: 0.13.1
+spec:
+  interval: 2m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  provider: generic
+  ref:
+    digest: sha256:b8e890d0d9804759c6b6f3e5f9a850512ca09b9ccc6d137a2f85cbf761981bd1
+  timeout: 2m
+  url: oci://ghcr.io/immich-app/immich-charts/immich

@@ -1,0 +1,106 @@
+controllers:
+  main:
+    replicas: 1
+    strategy: Recreate
+    initContainers:
+      seed-config:
+        image: &bootstrapImage
+          repository: docker.io/library/busybox
+          tag: 1.37.0
+          digest: sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+        command: [/bin/sh, /bootstrap/seed-arr-config.sh]
+        env:
+          APP_PORT: "7878"
+          CONFIG_UID: "1000"
+          CONFIG_GID: "1000"
+          API_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: media-automation-credentials
+                key: RADARR_API_KEY
+          ADMIN_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: media-automation-credentials
+                key: ADMIN_PASSWORD
+    containers:
+      main:
+        image:
+          repository: lscr.io/linuxserver/radarr
+          tag: version-6.3.0.10514
+          digest: sha256:e35056574cdc695a9ee745aa1ecda9eab3842450bf4b7b8471b023790fa3861d
+        env: &linuxserverEnv
+          PUID: "1000"
+          PGID: "1000"
+          TZ: Asia/Kolkata
+          UMASK: "002"
+        probes:
+          liveness: &arrProbe
+            enabled: true
+            type: HTTP
+            path: /ping
+            port: 7878
+          readiness: *arrProbe
+          startup:
+            <<: *arrProbe
+            spec:
+              failureThreshold: 30
+              periodSeconds: 10
+        resources: &resources
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 1Gi
+        securityContext: &securityContext
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+
+defaultPodOptions: &podOptions
+  nodeSelector:
+    homelab.bupd.xyz/workload-pool: media
+  securityContext:
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 7878
+        primary: true
+        protocol: HTTP
+
+persistence:
+  config:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    storageClass: local-path
+    retain: true
+    advancedMounts:
+      main:
+        main:
+          - path: /config
+        seed-config:
+          - path: /config
+  media:
+    type: persistentVolumeClaim
+    existingClaim: media-data
+    globalMounts:
+      - path: /data
+  bootstrap:
+    type: configMap
+    name: media-bootstrap
+    advancedMounts:
+      main:
+        seed-config:
+          - path: /bootstrap/seed-arr-config.sh
+            subPath: seed-arr-config.sh
+            readOnly: true
+  tmp:
+    type: emptyDir
+    globalMounts:
+      - path: /tmp

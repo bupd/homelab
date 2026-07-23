@@ -1,0 +1,17 @@
+[Unit]
+Description=Ensure the K3s media-worker starts after delayed storage
+Documentation=https://docs.k3s.io/
+Requires=k3s.service
+After=systemd-time-wait-sync.service time-sync.target k3s.service network-online.target
+Wants=systemd-time-wait-sync.service time-sync.target network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=-/usr/bin/systemctl reset-failed media-worker.service home-bupd-hdd-data.mount
+ExecStart=/usr/bin/systemctl start media-worker.service
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

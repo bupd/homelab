@@ -1,0 +1,98 @@
+controllers:
+  main:
+    replicas: 1
+    strategy: Recreate
+    containers:
+      main:
+        image:
+          repository: docker.io/jellyfin/jellyfin
+          tag: 10.11.11
+          digest: sha256:aefb67e6a7ff1debdd154a78a7bbb780fd0c873d8639210a7f6a2016ad2b35db
+          pullPolicy: IfNotPresent
+        env:
+          TZ: Asia/Kolkata
+        probes:
+          liveness:
+            enabled: true
+            type: HTTP
+            path: /health
+            port: 8096
+          readiness:
+            enabled: true
+            type: HTTP
+            path: /health
+            port: 8096
+          startup:
+            enabled: true
+            type: HTTP
+            path: /health
+            port: 8096
+            spec:
+              failureThreshold: 30
+              periodSeconds: 10
+        resources:
+          limits:
+            memory: 4Gi
+            nvidia.com/gpu: 1
+            nvidia.com/gpumem: 2048
+          requests:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+          seccompProfile:
+            type: RuntimeDefault
+
+defaultPodOptions:
+  nodeSelector:
+    homelab.bupd.xyz/workload-pool: media
+  runtimeClassName: nvidia
+  schedulerName: hami-scheduler
+  securityContext:
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 8096
+        primary: true
+        protocol: HTTP
+
+persistence:
+  config:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    storageClass: local-path
+    retain: true
+    globalMounts:
+      - path: /config
+  cache:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 20Gi
+    storageClass: local-path
+    globalMounts:
+      - path: /cache
+  media:
+    type: persistentVolumeClaim
+    existingClaim: media-data
+    globalMounts:
+      - path: /data
+      - path: /mnt/movies
+        subPath: Movies
+      - path: /mnt/music
+        subPath: Music
+  tmp:
+    type: emptyDir
+    globalMounts:
+      - path: /tmp

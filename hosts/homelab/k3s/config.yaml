@@ -1,0 +1,33 @@
+# K3s server configuration for the authoritative homelab control plane.
+node-name: archbtw
+node-ip: 192.168.0.4
+advertise-address: 192.168.0.4
+
+# The server runs only the Kubernetes control plane and datastore. Workloads,
+# including system add-ons, run on agent nodes.
+disable-agent: true
+
+# Agentless API servers need an egress tunnel to reach admission webhooks and
+# aggregated API services hosted by Pods.
+egress-selector-mode: cluster
+
+# Retain the scheduling guard if the embedded agent is ever re-enabled.
+# Agentless servers do not register a Node, so this is inert while
+# disable-agent is true.
+node-taint:
+  - node-role.kubernetes.io/control-plane=true:NoSchedule
+
+tls-san:
+  - 192.168.0.4
+  - 100.81.118.34
+  - ARCHBTW
+  - archbtw
+  - archbtw.tail6c5ea9.ts.net
+
+# Tailnet ingress is provided by the Flux-managed Tailscale Operator. Do not
+# bind the packaged LAN load balancer or ingress controller on this node.
+disable:
+  - servicelb
+  - traefik
+
+write-kubeconfig-mode: "0600"

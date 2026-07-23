@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Flux-managed Immich deployment settings for the homelab cluster.">
+    <title>Immich deployment settings · homelab</title>
+    <style>
+      @layer reset, base, components, utilities;
+
+      @layer reset {
+        *, *::before, *::after { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body, h1, h2, h3, p, ul, dl, dd { margin: 0; }
+        body { min-height: 100vh; }
+        img, svg { display: block; max-width: 100%; }
+        a { color: inherit; text-decoration: none; }
+        button, input { font: inherit; }
+      }
+
+      @layer base {
+        :root {
+          --lch-cream: 96.5% 0.015 80;
+          --lch-navy: 18% 0.04 280;
+          --lch-navy-deep: 16% 0.04 280;
+          --lch-white: 100% 0 0;
+          --lch-teal: 70% 0.1 190;
+          --lch-orange: 65% 0.18 50;
+          --lch-yellow: 82% 0.17 90;
+          --lch-gray-light: 92% 0.01 280;
+          --lch-ink: 15% 0.04 280;
+          --lch-ink-muted: 40% 0.02 280;
+
+          --color-canvas: oklch(var(--lch-cream));
+          --color-surface: oklch(var(--lch-white));
+          --color-ink: oklch(var(--lch-ink));
+          --color-ink-muted: oklch(var(--lch-ink-muted));
+          --color-navy: oklch(var(--lch-navy));
+          --color-navy-deep: oklch(var(--lch-navy-deep));
+          --color-teal: oklch(var(--lch-teal));
+          --color-orange: oklch(var(--lch-orange));
+          --color-yellow: oklch(var(--lch-yellow));
+          --color-border: oklch(var(--lch-gray-light));
+
+          --space-1: .25rem;
+          --space-2: .5rem;
+          --space-3: .75rem;
+          --space-4: 1rem;
+          --space-5: 1.25rem;
+          --space-6: 1.5rem;
+          --space-8: 2rem;
+          --space-10: 2.5rem;
+          --space-12: 3rem;
+          --space-16: 4rem;
+
+          --font-sans: "General Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          --font-mono: "Source Code Pro", "SFMono-Regular", Consolas, monospace;
+          --text-xs: .75rem;
+          --text-sm: .875rem;
+          --text-base: 1rem;
+          --text-lg: 1.125rem;
+          --text-xl: 1.25rem;
+          --text-2xl: 1.5rem;
+          --text-3xl: clamp(2.25rem, 5vw, 4.25rem);
+          --weight-regular: 400;
+          --weight-medium: 500;
+          --weight-semibold: 600;
+          --leading-tight: 1.1;
+          --leading-normal: 1.4;
+          --leading-relaxed: 1.65;
+          --radius-sm: 4px;
+          --radius-md: 8px;
+          --radius-lg: 16px;
+          --radius-xl: 24px;
+          --radius-full: 9999px;
+          --page-max-width: 1240px;
+          --navbar-height: 72px;
+          --shadow-sm: 0 1px 2px oklch(0% 0 0 / .05);
+        }
+
+        body {
+          background: var(--color-canvas);
+          color: var(--color-ink);
+          font-family: var(--font-sans);
+          font-size: var(--text-base);
+          line-height: var(--leading-relaxed);
+        }
+
+        code {
+          font-family: var(--font-mono);
+          font-size: .88em;
+        }
+
+        :target { scroll-margin-top: calc(var(--navbar-height) + var(--space-6)); }
+      }
+
+      @layer components {
+        .topbar {
+          align-items: center;
+          backdrop-filter: blur(16px);
+          background: oklch(var(--lch-cream) / .88);
+          border-bottom: 1px solid oklch(var(--lch-ink) / .08);
+          display: flex;
+          height: var(--navbar-height);
+          justify-content: space-between;
+          padding: 0 max(var(--space-6), calc((100vw - var(--page-max-width)) / 2));
+          position: sticky;
+          top: 0;
+          z-index: 10;
+        }
+
+        .topbar__brand {
+          align-items: center;
+          display: flex;
+          font-weight: var(--weight-semibold);
+          gap: var(--space-3);
+          letter-spacing: -.02em;
+        }
+
+        .topbar__mark {
+          align-items: center;
+          background: var(--color-navy);
+          border-radius: 10px;
+          color: var(--color-surface);
+          display: inline-flex;
+          height: 34px;
+          justify-content: center;
+          width: 34px;
+        }
+
+        .topbar__meta {
+          color: var(--color-ink-muted);
+          font-family: var(--font-mono);
+          font-size: var(--text-xs);
+        }
+
+        .hero {
+          margin: 0 auto;
+          max-width: var(--page-max-width);
+          padding: var(--space-16) var(--space-6) var(--space-12);
+        }
+
+        .hero__eyebrow {
+          color: var(--color-ink-muted);
+          font-family: var(--font-mono);
+          font-size: var(--text-xs);
+          letter-spacing: .12em;
+          margin-bottom: var(--space-4);
+          text-transform: uppercase;
+        }
+
+        .hero__title {
+          font-size: var(--text-3xl);
+          font-weight: var(--weight-regular);
+          letter-spacing: -.055em;
+          line-height: var(--leading-tight);
+          max-width: 850px;
+        }
+
+        .hero__lede {
+          color: var(--color-ink-muted);
+          font-size: var(--text-lg);
+          margin-top: var(--space-6);
+          max-width: 760px;
+        }
+
+        .status-strip {
+          display: grid;
+          gap: var(--space-3);
+          grid-template-columns: repeat(4, 1fr);
+          margin-top: var(--space-10);
+        }
+
+        .status-card {
+          background: var(--color-surface);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-sm);
+          padding: var(--space-5);
+        }
+
+        .status-card__label {
+          color: var(--color-ink-muted);
+          font-size: var(--text-xs);
+          letter-spacing: .08em;
+          text-transform: uppercase;
+        }
+
+        .status-card__value {
+          display: block;
+          font-size: var(--text-xl);
+          font-weight: var(--weight-medium);
+          line-height: 1.25;
+          margin-top: var(--space-2);
+        }
+
+        .status-card__value--paused { color: oklch(55% .16 50); }
+        .status-card__value--on { color: oklch(47% .1 175); }
+
+        .docs {
+          display: grid;
+          grid-template-columns: 15rem minmax(0, 1fr);
+          margin: 0 auto;
+          max-width: var(--page-max-width);
+          padding: 0 var(--space-6) var(--space-16);
+        }
+
+        .docs__sidebar {
+          align-self: start;
+          border-right: 1px solid oklch(var(--lch-ink) / .1);
+          max-height: calc(100vh - var(--navbar-height) - var(--space-8));
+          overflow-y: auto;
+          padding: var(--space-4) var(--space-6) var(--space-8) 0;
+          position: sticky;
+          top: calc(var(--navbar-height) + var(--space-8));
+        }
+
+        .docs-nav__title {
+          color: var(--color-ink-muted);
+          font-size: var(--text-xs);
+          font-weight: var(--weight-semibold);
+          letter-spacing: .08em;
+          margin-bottom: var(--space-2);
+          text-transform: uppercase;
+        }
+
+        .docs-nav__link {
+          border-radius: var(--radius-md);
+          color: var(--color-ink-muted);
+          display: block;
+          font-size: var(--text-sm);
+          padding: var(--space-1) var(--space-3);
+          transition: background .15s ease, color .15s ease;
+        }
+
+        .docs-nav__link:hover {
+          background: oklch(var(--lch-white) / .7);
+          color: var(--color-ink);
+        }
+
+        .docs__content {
+          min-width: 0;
+          padding: 0 0 0 var(--space-10);
+        }
+
+        .section {
+          border-top: 1px solid oklch(var(--lch-ink) / .1);
+          padding: var(--space-12) 0;
+        }
+
+        .section:first-child { border-top: 0; padding-top: var(--space-4); }
+
+        .section__kicker {
+          color: var(--color-ink-muted);
+          font-family: var(--font-mono);
+          font-size: var(--text-xs);
+          letter-spacing: .1em;
+          text-transform: uppercase;
+        }
+
+        .section__title {
+          font-size: clamp(1.75rem, 4vw, 2.5rem);
+          font-weight: var(--weight-regular);
+          letter-spacing: -.035em;
+          line-height: 1.2;
+          margin-top: var(--space-2);
+        }
+
+        .section__intro {
+          color: var(--color-ink-muted);
+          margin-top: var(--space-3);
+          max-width: 760px;
+        }
+
+        .callout {
+          background: oklch(var(--lch-teal) / .09);
+          border-left: 3px solid var(--color-teal);
+          border-radius: 0 var(--radius-md) var(--radius-md) 0;
+          margin-top: var(--space-6);
+          padding: var(--space-4) var(--space-5);
+        }
+
+        .callout--warning {
+          background: oklch(var(--lch-orange) / .09);
+          border-left-color: var(--color-orange);
+        }
+
+        .callout__title { font-weight: var(--weight-semibold); }
+        .callout__text { color: var(--color-ink-muted); margin-top: var(--space-1); }
+
+        .setting-grid {
+          display: grid;
+          gap: var(--space-4);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          margin-top: var(--space-8);
+        }
+
+        .setting-card {
+          background: var(--color-surface);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-sm);
+          min-width: 0;
+          padding: var(--space-6);
+        }
+
+        .setting-card--wide { grid-column: 1 / -1; }
+
+        .setting-card__top {
+          align-items: flex-start;
+          display: flex;
+          gap: var(--space-4);
+          justify-content: space-between;
+        }
+
+        .setting-card__title {
+          font-size: var(--text-lg);
+          font-weight: var(--weight-medium);
+          line-height: 1.3;
+        }
+
+        .setting-card__key {
+          color: var(--color-ink-muted);
+          display: block;
+          font-family: var(--font-mono);
+          font-size: var(--text-xs);
+          margin-top: var(--space-1);
+          overflow-wrap: anywhere;
+        }
+
+        .setting-card__body {
+          color: var(--color-ink-muted);
+          font-size: var(--text-sm);
+          margin-top: var(--space-4);
+        }
+
+        .setting-card__outcome {
+          border-top: 1px solid var(--color-border);
+          color: var(--color-ink);
+          font-size: var(--text-sm);
+          margin-top: var(--space-4);
+          padding-top: var(--space-4);
+        }
+
+        .pill {
+          border-radius: var(--radius-full);
+          flex: 0 0 auto;
+          font-family: var(--font-mono);
+          font-size: var(--text-xs);
+          font-weight: var(--weight-semibold);
+          padding: 5px 10px;
+        }
+
+        .pill--on { background: oklch(var(--lch-teal) / .22); color: oklch(38% .1 175); }
+        .pill--off { background: oklch(var(--lch-orange) / .16); color: oklch(46% .15 45); }
+        .pill--value { background: var(--color-border); color: var(--color-ink); }
+        .pill--pinned { background: oklch(var(--lch-yellow) / .28); color: oklch(40% .11 85); }
+
+        .data-table {
+          background: var(--color-surface);
+          border-radius: var(--radius-lg);
+          border-spacing: 0;
+          box-shadow: var(--shadow-sm);
+          margin-top: var(--space-8);
+          overflow: hidden;
+          width: 100%;
+        }
+
+        .data-table th {
+          background: oklch(var(--lch-gray-light) / .55);
+          color: var(--color-ink-muted);
+          font-size: var(--text-xs);
+          font-weight: var(--weight-semibold);
+          letter-spacing: .06em;
+          padding: var(--space-3) var(--space-4);
+          text-align: left;
+          text-transform: uppercase;
+        }
+
+        .data-table td {
+          border-top: 1px solid var(--color-border);
+          font-size: var(--text-sm);
+          padding: var(--space-4);
+          vertical-align: top;
+        }
+
+        .data-table code { overflow-wrap: anywhere; }
+
+        .flow {
+          align-items: stretch;
+          display: grid;
+          gap: var(--space-6);
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          margin-top: var(--space-8);
+        }
+
+        .flow__node {
+          background: var(--color-navy);
+          border-radius: var(--radius-lg);
+          color: var(--color-surface);
+          padding: var(--space-6);
+          position: relative;
+        }
+
+        .flow__node:not(:last-child)::after {
+          color: var(--color-ink-muted);
+          content: "→";
+          font-size: var(--text-xl);
+          position: absolute;
+          right: calc(var(--space-6) * -0.7);
+          top: 50%;
+          transform: translate(50%, -50%);
+        }
+
+        .flow__label {
+          color: oklch(var(--lch-white) / .58);
+          font-family: var(--font-mono);
+          font-size: var(--text-xs);
+          text-transform: uppercase;
+        }
+
+        .flow__title { font-size: var(--text-lg); margin-top: var(--space-2); }
+        .flow__text { color: oklch(var(--lch-white) / .7); font-size: var(--text-sm); margin-top: var(--space-2); }
+
+        .footer {
+          background: var(--color-navy-deep);
+          color: var(--color-surface);
+          padding: var(--space-10) var(--space-6);
+        }
+
+        .footer__inner {
+          align-items: center;
+          display: flex;
+          justify-content: space-between;
+          margin: 0 auto;
+          max-width: var(--page-max-width);
+        }
+
+        .footer__meta { color: oklch(var(--lch-white) / .55); font-family: var(--font-mono); font-size: var(--text-xs); }
+      }
+
+      @layer utilities {
+        .mono { font-family: var(--font-mono); }
+        .nowrap { white-space: nowrap; }
+      }
+
+      @media (max-width: 1024px) {
+        .status-strip { grid-template-columns: repeat(2, 1fr); }
+        .docs { grid-template-columns: 1fr; }
+        .docs__sidebar { display: none; }
+        .docs__content { padding-left: 0; }
+      }
+
+      @media (max-width: 720px) {
+        .topbar__meta { display: none; }
+        .hero { padding-top: var(--space-10); }
+        .status-strip, .setting-grid, .flow { grid-template-columns: 1fr; }
+        .flow__node:not(:last-child)::after { bottom: calc(var(--space-6) * -1.1); content: "↓"; left: 50%; right: auto; top: auto; }
+        .data-table { display: block; overflow-x: auto; }
+        .footer__inner { align-items: flex-start; flex-direction: column; gap: var(--space-3); }
+      }
+
+      @media (max-width: 480px) {
+        .topbar, .hero, .docs { padding-left: var(--space-4); padding-right: var(--space-4); }
+        .status-card, .setting-card { padding: var(--space-4); }
+        .section { padding: var(--space-10) 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="topbar__brand" href="#top" aria-label="Back to top">
+        <span class="topbar__mark" aria-hidden="true">I</span>
+        <span>Immich · homelab</span>
+      </a>
+      <span class="topbar__meta">Flux desired state · apps/media/immich</span>
+    </header>
+
+    <main id="top">
+      <header class="hero">
+        <p class="hero__eyebrow">Deployment reference / current desired state</p>
+        <h1 class="hero__title">Every Immich setting, and what it changes.</h1>
+        <p class="hero__lede">
+          This page explains the declarations currently applied through Flux. It separates what is enabled from what is merely installed, and calls out the operational result of changing each switch.
+        </p>
+
+        <div class="status-strip" aria-label="Current deployment summary">
+          <div class="status-card">
+            <span class="status-card__label">Application</span>
+            <strong class="status-card__value status-card__value--on">Running · 1 replica</strong>
+          </div>
+          <div class="status-card">
+            <span class="status-card__label">Database</span>
+            <strong class="status-card__value status-card__value--on">Running · 1 instance</strong>
+          </div>
+          <div class="status-card">
+            <span class="status-card__label">Release</span>
+            <strong class="status-card__value">Immich v3.0.3</strong>
+          </div>
+          <div class="status-card">
+            <span class="status-card__label">Placement</span>
+            <strong class="status-card__value">media-worker</strong>
+          </div>
+        </div>
+      </header>
+
+      <div class="docs">
+        <aside class="docs__sidebar" aria-label="On this page">
+          <nav class="docs-nav">
+            <p class="docs-nav__title">On this page</p>
+            <a class="docs-nav__link" href="#state">Current state</a>
+            <a class="docs-nav__link" href="#runtime">Runtime &amp; versions</a>
+            <a class="docs-nav__link" href="#components">Workloads &amp; resources</a>
+            <a class="docs-nav__link" href="#features">Feature settings</a>
+            <a class="docs-nav__link" href="#storage">Storage topology</a>
+            <a class="docs-nav__link" href="#database">Database &amp; backup</a>
+            <a class="docs-nav__link" href="#networking">Private networking</a>
+            <a class="docs-nav__link" href="#observability">Metrics</a>
+            <a class="docs-nav__link" href="#flux">Flux behavior</a>
+            <a class="docs-nav__link" href="#resume">Replica declaration</a>
+          </nav>
+        </aside>
+
+        <article class="docs__content">
+          <section class="section" id="state">
+            <p class="section__kicker">01 / State</p>
+            <h2 class="section__title">Installed and running</h2>
+            <p class="section__intro">
+              Flux owns the release, Services, Ingress, PVCs, configuration, and database. All three application controllers run with one replica.
+            </p>
+            <div class="callout">
+              <p class="callout__title">Immich is enabled.</p>
+              <p class="callout__text">Server, machine learning, and Valkey each have <code>replicas: 1</code>. The application, background jobs, and cache are active.</p>
+            </div>
+            <div class="setting-grid">
+              <article class="setting-card">
+                <div class="setting-card__top">
+                  <div><h3 class="setting-card__title">Server replicas</h3><code class="setting-card__key">server.controllers.main.replicas</code></div>
+                  <span class="pill pill--on">1 · ON</span>
+                </div>
+                <p class="setting-card__body">Controls the API, web UI, uploads, library jobs, metadata extraction, thumbnails, and video handling.</p>
+                <p class="setting-card__outcome"><strong>Set to 1:</strong> Immich becomes reachable and background work resumes. <strong>Set to 0:</strong> no UI, API, uploads, or jobs.</p>
+              </article>
+              <article class="setting-card">
+                <div class="setting-card__top">
+                  <div><h3 class="setting-card__title">Machine-learning replicas</h3><code class="setting-card__key">machine-learning.controllers.main.replicas</code></div>
+                  <span class="pill pill--on">1 · ON</span>
+                </div>
+                <p class="setting-card__body">Runs facial recognition, smart search, and OCR inference through the RTX 3060.</p>
+                <p class="setting-card__outcome"><strong>Set to 1:</strong> ML jobs run. <strong>Set to 0:</strong> the server can run, but ML-backed jobs fail or remain queued.</p>
+              </article>
+              <article class="setting-card">
+                <div class="setting-card__top">
+                  <div><h3 class="setting-card__title">Valkey replicas</h3><code class="setting-card__key">valkey.controllers.main.replicas</code></div>
+                  <span class="pill pill--on">1 · ON</span>
+                </div>
+                <p class="setting-card__body">Provides Immich's Redis-compatible queue and cache service.</p>
+                <p class="setting-card__outcome"><strong>Set to 1:</strong> job queues and cache work. <strong>Set to 0:</strong> the Immich server cannot operate correctly even if its own replica is enabled.</p>
+              </article>
+              <article class="setting-card">
+                <div class="setting-card__top">
+                  <div><h3 class="setting-card__title">PostgreSQL instances</h3><code class="setting-card__key">Cluster.spec.instances</code></div>
+                  <span class="pill pill--on">1 · ON</span>
+                </div>
+                <p class="setting-card__body">CloudNativePG keeps the application database online independently of the Helm workloads.</p>
+                <p class="setting-card__outcome"><strong>Current outcome:</strong> metadata remains available to the running Immich server. This is a single instance, not high availability.</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="section" id="runtime">
+            <p class="section__kicker">02 / Runtime</p>
+            <h2 class="section__title">Pinned versions and node placement</h2>
+            <p class="section__intro">The release is reproducible: application images, chart content, database image, and Valkey image are pinned rather than following floating tags.</p>
+            <table class="data-table">
+              <thead><tr><th>Setting</th><th>Current value</th><th>Operational effect</th></tr></thead>
+              <tbody>
+                <tr><td>Helm chart</td><td><code>0.13.1</code> by SHA-256 digest</td><td>Flux always installs the exact reviewed chart artifact.</td></tr>
+                <tr><td>Server image</td><td><code>v3.0.3</code></td><td>Overrides the chart's v3.0.0 app version.</td></tr>
+                <tr><td>ML image</td><td><code>v3.0.3-cuda</code></td><td>Includes CUDA support for NVIDIA inference.</td></tr>
+                <tr><td>Valkey image</td><td><code>9.1-alpine</code> by digest</td><td>A new upstream image cannot appear without a repository change.</td></tr>
+                <tr><td>GPU virtualization</td><td><code>HAMi 2.9.0</code></td><td>Replaces unbounded NVIDIA time-slicing with per-workload CUDA memory allocation limits.</td></tr>
+                <tr><td>Node selector</td><td><code>homelab.bupd.xyz/workload-pool: media</code></td><td>All chart workloads schedule only on nodes labeled for media.</td></tr>
+                <tr><td>Storage affinity</td><td><code>media-worker</code></td><td>Host-path volumes bind Immich to the node that owns the HDD.</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section" id="components">
+            <p class="section__kicker">03 / Workloads</p>
+            <h2 class="section__title">Resources are bounded for a 16 GiB node</h2>
+            <p class="section__intro">CPU and system-memory requests reserve scheduling capacity. System-memory limits are cgroup ceilings; GPU-memory limits are enforced by HAMi-Core at the CUDA allocation layer.</p>
+            <table class="data-table">
+              <thead><tr><th>Component</th><th>CPU request</th><th>Memory request</th><th>Memory limit</th><th>GPU</th></tr></thead>
+              <tbody>
+                <tr><td>Immich server</td><td><code>500m</code></td><td><code>1Gi</code></td><td><code>3Gi</code></td><td>HAMi vGPU · <code>2048 MiB</code> VRAM</td></tr>
+                <tr><td>Machine learning</td><td><code>500m</code></td><td><code>1Gi</code></td><td><code>3Gi</code></td><td>HAMi vGPU · <code>3072 MiB</code> VRAM</td></tr>
+                <tr><td>Valkey</td><td><code>50m</code></td><td><code>128Mi</code></td><td><code>512Mi</code></td><td>None</td></tr>
+                <tr><td>PostgreSQL</td><td><code>500m</code></td><td><code>1Gi</code></td><td><code>4Gi</code></td><td>None</td></tr>
+              </tbody>
+            </table>
+            <div class="callout">
+              <p class="callout__title">Immich's combined VRAM allocation is 5 GiB.</p>
+              <p class="callout__text">HAMi admits 3 GiB for ML and 2 GiB for NVENC. A CUDA allocation beyond either pod's declared quota returns out-of-memory instead of consuming the remaining physical VRAM.</p>
+            </div>
+            <div class="callout">
+              <p class="callout__title">CPU is intentionally not capped.</p>
+              <p class="callout__text">Background imports can use spare CPU and finish sooner. The measured server plus ML load was about 1.3 cores while face detection and indexing were active—not runaway use on this node.</p>
+            </div>
+          </section>
+
+          <section class="section" id="features">
+            <p class="section__kicker">04 / Features</p>
+            <h2 class="section__title">Application behavior</h2>
+            <div class="setting-grid">
+              <article class="setting-card">
+                <div class="setting-card__top">
+                  <div><h3 class="setting-card__title">Video transcoding</h3><code class="setting-card__key">immich.configuration.ffmpeg.transcode</code></div>
+                  <span class="pill pill--on">required</span>
+                </div>
+                <p class="setting-card__body">Immich transcodes only video or audio streams that are incompatible with its accepted formats, including unsupported codecs, HDR, or incompatible pixel formats.</p>
+                <p class="setting-card__outcome"><strong>Outcome:</strong> compatible originals avoid conversion; incompatible media gets a broadly playable encoded copy at the cost of compute and storage.</p>
+              </article>
+              <article class="setting-card">
+                <div class="setting-card__top">
+                  <div><h3 class="setting-card__title">NVENC acceleration</h3><code class="setting-card__key">ffmpeg.accel / ffmpeg.accelDecode</code></div>
+                  <span class="pill pill--on">nvenc / true</span>
+                </div>
+                <p class="setting-card__body">NVIDIA encode and hardware decode are configured, and the server uses the <code>nvidia</code> runtime class.</p>
+                <p class="setting-card__outcome"><strong>Current outcome:</strong> required transcodes use the RTX 3060 for hardware-accelerated encoding and decoding.</p>
+              </article>
+              <article class="setting-card">
+                <div class="setting-card__top">
+                  <div><h3 class="setting-card__title">Machine learning</h3><code class="setting-card__key">machine-learning.enabled</code></div>
+                  <span class="pill pill--on">true</span>
+                </div>
+                <p class="setting-card__body">The ML Deployment, Service, cache PVC, CUDA image, and GPU request are rendered by Helm.</p>
+                <p class="setting-card__outcome"><strong>Important:</strong> enabled means the Kubernetes resources exist; its replica count of zero means the GPU-consuming pod is currently stopped.</p>
+              </article>
+              <article class="setting-card">
+                <div class="setting-card__top">
+                  <div><h3 class="setting-card__title">Config ownership</h3><code class="setting-card__key">immich.configurationKind</code></div>
+                  <span class="pill pill--value">ConfigMap</span>
+                </div>
+                <p class="setting-card__body">Settings are generated from this repository and mounted as Immich's configuration file.</p>
+                <p class="setting-card__outcome"><strong>Outcome:</strong> settings shown as config-file-controlled in the admin UI must be changed in Git, not in the UI.</p>
+              </article>
+              <article class="setting-card">
+                <div class="setting-card__top">
+                  <div><h3 class="setting-card__title">Trash</h3><code class="setting-card__key">immich.configuration.trash</code></div>
+                  <span class="pill pill--value">chart default</span>
+                </div>
+                <p class="setting-card__body">The repository contains only commented examples, so Immich's default trash behavior applies.</p>
+                <p class="setting-card__outcome"><strong>If explicitly disabled:</strong> deletions bypass trash. <strong>If enabled:</strong> deleted items remain recoverable for the configured number of days.</p>
+              </article>
+              <article class="setting-card">
+                <div class="setting-card__top">
+                  <div><h3 class="setting-card__title">Storage template</h3><code class="setting-card__key">immich.configuration.storageTemplate</code></div>
+                  <span class="pill pill--value">chart default</span>
+                </div>
+                <p class="setting-card__body">The example template is commented out; Immich's default organization is used for managed uploads.</p>
+                <p class="setting-card__outcome"><strong>If enabled later:</strong> new managed assets are moved into the declared year/month/day filename layout.</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="section" id="storage">
+            <p class="section__kicker">05 / Storage</p>
+            <h2 class="section__title">Four HDD-backed library mounts and local state</h2>
+            <p class="section__intro">The declared 1 TiB PV sizes are Kubernetes capacity metadata. They do not reserve 1 TiB; actual free space is determined by the host filesystem.</p>
+            <div class="flow" aria-label="Immich storage topology">
+              <div class="flow__node"><p class="flow__label">Host HDD</p><h3 class="flow__title">/home/bupd/hdd/data</h3><p class="flow__text">Physical media filesystem on media-worker.</p></div>
+              <div class="flow__node"><p class="flow__label">Persistent volumes</p><h3 class="flow__title">Managed + 3 external</h3><p class="flow__text">Static hostPath PVs with Retain policy.</p></div>
+              <div class="flow__node"><p class="flow__label">Immich container</p><h3 class="flow__title">/data + 3 mounts</h3><p class="flow__text">Uploads and all external media trees stay separate.</p></div>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>Purpose</th><th>Host path / storage</th><th>Container use</th><th>Effect</th></tr></thead>
+              <tbody>
+                <tr><td>Managed library</td><td><code>/home/bupd/hdd/data/immich/library</code></td><td>Immich <code>/data</code> library claim</td><td>New uploads, thumbnails, profiles, and generated files live on the HDD.</td></tr>
+                <tr><td>External library</td><td><code>/home/bupd/hdd/data/BUPD_Personal</code></td><td><code>/mnt/photos</code>, read-write</td><td>Immich can index, modify sidecars, and delete originals. UI deletion can be destructive.</td></tr>
+                <tr><td>Mobile Booky library</td><td><code>/home/bupd/hdd/data/mobile-booky</code></td><td><code>/mnt/mobile-booky</code>, read-write</td><td>Available as a separate external-library import path with writable originals.</td></tr>
+                <tr><td>Prasanth library</td><td><code>/home/bupd/hdd/data/Prasanth</code></td><td><code>/mnt/prasanth</code>, read-write</td><td>Available as a separate external-library import path with writable originals.</td></tr>
+                <tr><td>ML model cache</td><td><code>20Gi</code> local-path PVC</td><td><code>/cache</code></td><td>Downloaded ML models survive pod restarts but remain node-local.</td></tr>
+                <tr><td>Valkey data</td><td><code>2Gi</code> local-path PVC</td><td>Valkey data directory</td><td>Queue/cache state survives pod replacement.</td></tr>
+                <tr><td>Database</td><td><code>50Gi</code> local-path PVC</td><td>PostgreSQL data directory</td><td>Stores metadata, users, albums, jobs, and vectors—not original photos.</td></tr>
+              </tbody>
+            </table>
+            <div class="callout callout--warning">
+              <p class="callout__title">All three external libraries are writable.</p>
+              <p class="callout__text">This is intentional for sidecars and deletion control. A mistaken deletion can remove an original from <code>BUPD_Personal</code>, <code>mobile-booky</code>, or <code>Prasanth</code>; keep an independent backup.</p>
+            </div>
+          </section>
+
+          <section class="section" id="database">
+            <p class="section__kicker">06 / Data</p>
+            <h2 class="section__title">One app-specific CloudNativePG database</h2>
+            <div class="setting-grid">
+              <article class="setting-card">
+                <div class="setting-card__top"><div><h3 class="setting-card__title">PostgreSQL 18</h3><code class="setting-card__key">immich-database · instances: 1</code></div><span class="pill pill--on">running</span></div>
+                <p class="setting-card__body">A single CNPG instance owns database <code>immich</code> and user <code>immich</code>. Credentials come from the operator-generated <code>immich-database-app</code> Secret.</p>
+                <p class="setting-card__outcome"><strong>Outcome:</strong> simple single-node persistence. A node/disk failure has no live database replica to fail over to.</p>
+              </article>
+              <article class="setting-card">
+                <div class="setting-card__top"><div><h3 class="setting-card__title">Vector support</h3><code class="setting-card__key">vchord + vector + cube + earthdistance</code></div><span class="pill pill--on">enabled</span></div>
+                <p class="setting-card__body">VectorChord is preloaded and Immich's required extensions are ensured by CNPG.</p>
+                <p class="setting-card__outcome"><strong>Outcome:</strong> semantic search and facial-recognition embeddings can be stored and queried.</p>
+              </article>
+              <article class="setting-card setting-card--wide">
+                <div class="setting-card__top"><div><h3 class="setting-card__title">Database backup CronJob</h3><code class="setting-card__key">schedule: 0 2 * * * · Asia/Kolkata</code></div><span class="pill pill--off">suspended</span></div>
+                <p class="setting-card__body">When enabled, it writes compressed SQL dumps to <code>/home/bupd/hdd/data/immich/backups</code>, keeps today and yesterday, plus the newest Sunday checkpoint, and removes older matching dumps.</p>
+                <p class="setting-card__outcome"><strong>Current outcome:</strong> no scheduled database backups run. Changing <code>suspend</code> to <code>false</code> enables the 02:00 daily schedule. This backs up database metadata only, not photos.</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="section" id="networking">
+            <p class="section__kicker">07 / Network</p>
+            <h2 class="section__title">Private HTTPS through Tailscale</h2>
+            <div class="flow" aria-label="Immich request path">
+              <div class="flow__node"><p class="flow__label">Tailnet client</p><h3 class="flow__title">Private device</h3><p class="flow__text">Must be connected and permitted by tailnet policy.</p></div>
+              <div class="flow__node"><p class="flow__label">Tailscale Ingress</p><h3 class="flow__title">immich.tail6c5ea9.ts.net</h3><p class="flow__text">Tailscale provides the private route and TLS identity.</p></div>
+              <div class="flow__node"><p class="flow__label">Service</p><h3 class="flow__title">immich-server:2283</h3><p class="flow__text">Receives traffic only when the server has a running replica.</p></div>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>Setting</th><th>Value</th><th>Outcome</th></tr></thead>
+              <tbody>
+                <tr><td>Ingress class</td><td><code>tailscale</code></td><td>The Tailscale operator, not nginx, owns exposure.</td></tr>
+                <tr><td>TLS hostname</td><td><code>immich</code></td><td>Produces the tailnet DNS name and private HTTPS certificate.</td></tr>
+                <tr><td>External domain</td><td><code>https://immich.tail6c5ea9.ts.net</code></td><td>Immich generates links and redirects using the externally reachable URL.</td></tr>
+                <tr><td>Chart ingress</td><td><code>server.ingress.main.enabled: false</code></td><td>A separate repository-owned Ingress is used, avoiding duplicate ingress resources.</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section" id="observability">
+            <p class="section__kicker">08 / Signals</p>
+            <h2 class="section__title">Prometheus discovery is enabled</h2>
+            <div class="setting-grid">
+              <article class="setting-card">
+                <div class="setting-card__top"><div><h3 class="setting-card__title">Immich metrics</h3><code class="setting-card__key">immich.metrics.enabled</code></div><span class="pill pill--on">true</span></div>
+                <p class="setting-card__body">The Helm chart creates ServiceMonitor resources for Prometheus Operator discovery.</p>
+                <p class="setting-card__outcome"><strong>Set false:</strong> Prometheus stops discovering Immich endpoints. <strong>Current outcome:</strong> live application metrics are available for scraping.</p>
+              </article>
+              <article class="setting-card">
+                <div class="setting-card__top"><div><h3 class="setting-card__title">PostgreSQL metrics</h3><code class="setting-card__key">monitoring.enablePodMonitor</code></div><span class="pill pill--on">true</span></div>
+                <p class="setting-card__body">CNPG creates a PodMonitor for database health and performance metrics.</p>
+                <p class="setting-card__outcome"><strong>Outcome:</strong> database metrics remain available alongside the Immich application metrics.</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="section" id="flux">
+            <p class="section__kicker">09 / Reconciliation</p>
+            <h2 class="section__title">Gitless desired state, continuously enforced</h2>
+            <table class="data-table">
+              <thead><tr><th>Control</th><th>Value</th><th>What it does</th></tr></thead>
+              <tbody>
+                <tr><td>Artifact source</td><td><code>OCIRepository/homelab</code></td><td>Flux reads manifests from the published GHCR artifact rather than directly from Git.</td></tr>
+                <tr><td>App reconciliation</td><td><code>2m</code></td><td>Checks the Homelab artifact and applies the Immich app path every two minutes.</td></tr>
+                <tr><td>Chart reconciliation</td><td><code>2m</code></td><td>Checks the pinned Immich chart source; the digest prevents an unreviewed chart update.</td></tr>
+                <tr><td>Dependencies</td><td><code>immich-database</code>, <code>networking</code></td><td>The app waits for its database layer and Tailscale networking declarations.</td></tr>
+                <tr><td>Pruning</td><td><code>true</code></td><td>Objects removed from desired state are removed from the cluster.</td></tr>
+                <tr><td>Helm drift detection</td><td><code>enabled</code></td><td>Manual changes to Helm-owned resources are corrected back to repository values.</td></tr>
+                <tr><td>Remediation</td><td><code>3 retries</code>, rollback upgrades</td><td>Failed installs retry; failed upgrades clean up and roll back to the last healthy release.</td></tr>
+                <tr><td>Values watch</td><td><code>reconcile.fluxcd.io/watch: Enabled</code></td><td>A generated ConfigMap change triggers Helm reconciliation without waiting for the normal interval.</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section" id="resume">
+            <p class="section__kicker">10 / Operations</p>
+            <h2 class="section__title">Current running replica declaration</h2>
+            <p class="section__intro">These three values are set to one together so the web application, job workers, machine learning, and queue service are all available.</p>
+            <pre style="background: var(--color-navy-deep); border-radius: var(--radius-md); color: oklch(90% .01 80); margin-top: var(--space-6); overflow-x: auto; padding: var(--space-5);"><code>valkey:
+  controllers:
+    main:
+      replicas: 1
+
+server:
+  controllers:
+    main:
+      replicas: 1
+
+machine-learning:
+  controllers:
+    main:
+      replicas: 1</code></pre>
+            <div class="callout">
+              <p class="callout__title">Expected running result</p>
+              <p class="callout__text">The UI and application jobs are available, server and machine-learning GPU allocations are bounded by HAMi, and Valkey provides the queue and cache.</p>
+            </div>
+          </section>
+        </article>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <strong>Immich deployment settings</strong>
+        <span class="footer__meta">Source of truth: apps/media/immich · generated 2026-07-19</span>
+      </div>
+    </footer>
+  </body>
+</html>

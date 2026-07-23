@@ -1,0 +1,28 @@
+# The official chart mounts the Flux-created Secret `operator-oauth` when the
+# oauth values below are empty. Never place OAuth credentials in this file.
+oauth:
+  clientId: ""
+  clientSecret: ""
+
+installCRDs: true
+
+operatorConfig:
+  defaultTags:
+    - tag:k8s-operator
+  hostname: homelab-k8s-operator
+  nodeSelector:
+    homelab.bupd.xyz/workload-pool: media
+  resources:
+    limits:
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+proxyConfig:
+  defaultTags: tag:k8s
+  firewallMode: auto
+
+apiServerProxyConfig:
+  allowImpersonation: "false"
+  mode: "false"

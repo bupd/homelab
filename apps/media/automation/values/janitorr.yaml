@@ -1,0 +1,51 @@
+controllers:
+  main:
+    replicas: 1
+    strategy: Recreate
+    initContainers:
+      wait-config:
+        image:
+          repository: docker.io/library/busybox
+          tag: 1.37.0
+          digest: sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+        command:
+          - /bin/sh
+          - -c
+          - until [ -s /config/application.yml ]; do sleep 5; done
+    containers:
+      main:
+        image:
+          repository: ghcr.io/schaka/janitorr
+          tag: jvm-stable
+          digest: sha256:270e9113c71182d30929f253ff6ff49c63078f4556487a668602c4114c7d665a
+        probes:
+          liveness: {enabled: false}
+          readiness: {enabled: false}
+          startup: {enabled: false}
+        resources:
+          requests: {cpu: 25m, memory: 256Mi}
+          limits: {memory: 512Mi}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          seccompProfile: {type: RuntimeDefault}
+defaultPodOptions:
+  nodeSelector: {homelab.bupd.xyz/workload-pool: media}
+  securityContext: {fsGroup: 1000, fsGroupChangePolicy: OnRootMismatch}
+persistence:
+  config:
+    type: persistentVolumeClaim
+    existingClaim: janitorr-config
+    advancedMounts:
+      main:
+        main: [{path: /config}]
+        wait-config: [{path: /config}]
+  logs:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 2Gi
+    storageClass: local-path
+    retain: true
+    globalMounts: [{path: /logs}]
+  media: {type: persistentVolumeClaim, existingClaim: media-data, globalMounts: [{path: /data}]}
+  tmp: {type: emptyDir, globalMounts: [{path: /tmp}]}

@@ -1,0 +1,14 @@
+# K3s agent configuration for the first media workload worker.
+server: https://192.168.0.4:6443
+token-file: /run/secrets/k3s-agent-token
+
+node-name: media-worker
+node-ip: 10.89.0.2
+flannel-iface: eth0
+
+node-label:
+  - gpu=on
+  - homelab.bupd.xyz/node-class=worker
+  - homelab.bupd.xyz/workload-pool=media
+  - homelab.bupd.xyz/storage=media
+  - homelab.bupd.xyz/accelerator=nvidia

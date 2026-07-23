@@ -1,0 +1,136 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: immich-database-backup
+  namespace: immich
+  labels:
+    app.kubernetes.io/name: immich
+    app.kubernetes.io/component: database-backup
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 2
+  schedule: "0 2 * * *"
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 1
+  # Enable only after the existing v1.143 backup has been restored and checked.
+  suspend: true
+  timeZone: Asia/Kolkata
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 3600
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: immich
+            app.kubernetes.io/component: database-backup
+        spec:
+          nodeSelector:
+            kubernetes.io/hostname: media-worker
+          restartPolicy: Never
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: pg-dump
+              image: ghcr.io/cloudnative-pg/postgresql:18-standard-trixie@sha256:06d950644d127249699c1468d0ffad7e44c34daa11688b0e966dec947eb043c4
+              imagePullPolicy: IfNotPresent
+              command:
+                - /usr/bin/bash
+                - -euo
+                - pipefail
+                - -c
+                - |
+                  backup_dir=/backups
+                  today="$(date +%F)"
+                  yesterday="$(date --date='1 day ago' +%F)"
+                  final="${backup_dir}/immich-postgres-${today}.sql.gz"
+                  temporary="${final}.partial"
+
+                  rm -f "${temporary}"
+                  pg_dump \
+                    --dbname="${PGDATABASE}" \
+                    --clean \
+                    --if-exists \
+                    --host="${PGHOST}" \
+                    --no-owner \
+                    --username="${PGUSER}" \
+                    | gzip --rsyncable >"${temporary}"
+                  mv "${temporary}" "${final}"
+
+                  # Keep one independent weekly checkpoint. On Sunday the
+                  # current successful dump replaces the previous checkpoint.
+                  if [[ "$(date +%u)" == 7 ]]; then
+                    cp --reflink=auto "${final}" \
+                      "${backup_dir}/immich-postgres-weekly-${today}.sql.gz"
+                  fi
+
+                  # Daily slots: today and yesterday.
+                  find "${backup_dir}" -maxdepth 1 -type f \
+                    -name 'immich-postgres-????-??-??.sql.gz' \
+                    ! -name "immich-postgres-${today}.sql.gz" \
+                    ! -name "immich-postgres-${yesterday}.sql.gz" \
+                    -delete
+
+                  # Weekly slot: keep only the newest Sunday checkpoint.
+                  kept_weekly=0
+                  while IFS= read -r -d '' weekly; do
+                    ((kept_weekly += 1))
+                    if (( kept_weekly > 1 )); then
+                      rm -f -- "${weekly#* }"
+                    fi
+                  done < <(find "${backup_dir}" -maxdepth 1 -type f \
+                    -name 'immich-postgres-weekly-*.sql.gz' \
+                    -printf '%T@ %p\0' | sort -z -nr)
+
+                  # Remove legacy dumps only after a new dump has succeeded.
+                  find "${backup_dir}" -maxdepth 1 -type f \
+                    -name 'immich-db-backup-*.sql.gz' -delete
+              env:
+                - name: PGHOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: immich-database-app
+                      key: host
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: immich-database-app
+                      key: user
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: immich-database-app
+                      key: password
+                - name: PGDATABASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: immich-database-app
+                      key: dbname
+              resources:
+                limits:
+                  memory: 1Gi
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+                runAsGroup: 0
+                runAsNonRoot: false
+                runAsUser: 0
+              volumeMounts:
+                - mountPath: /backups
+                  name: backups
+                - mountPath: /tmp
+                  name: tmp
+          volumes:
+            - hostPath:
+                path: /home/bupd/hdd/data/immich/backups
+                type: DirectoryOrCreate
+              name: backups
+            - emptyDir: {}
+              name: tmp

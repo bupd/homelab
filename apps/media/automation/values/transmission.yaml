@@ -1,0 +1,106 @@
+controllers:
+  main:
+    replicas: 1
+    strategy: Recreate
+    initContainers:
+      seed-config:
+        image:
+          repository: docker.io/library/python
+          tag: 3.13-alpine
+          digest: sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0
+        command: [python3, /bootstrap/seed-transmission-config.py]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+          seccompProfile: {type: RuntimeDefault}
+    containers:
+      main:
+        image:
+          repository: lscr.io/linuxserver/transmission
+          tag: version-4.1.3-r0
+          digest: sha256:0913501f5d05c019f5e3555a3299df1d8de420fdf882c92a8857787f9fbf999d
+        env:
+          PUID: "1000"
+          PGID: "1000"
+          TZ: Asia/Kolkata
+          UMASK: "002"
+          USER: admin
+          PASS:
+            valueFrom:
+              secretKeyRef: {name: media-automation-credentials, key: ADMIN_PASSWORD}
+          PEERPORT: "51413"
+          TRANSMISSION_RPC_AUTHENTICATION_REQUIRED: "true"
+        probes:
+          liveness: &rpcProbe
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -lc
+                  - timeout 10 transmission-remote localhost:9091 --auth "admin:${PASS}" --session-info >/dev/null
+              failureThreshold: 6
+              periodSeconds: 10
+              timeoutSeconds: 12
+          readiness: *rpcProbe
+          startup:
+            <<: *rpcProbe
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -lc
+                  - timeout 10 transmission-remote localhost:9091 --auth "admin:${PASS}" --session-info >/dev/null
+              failureThreshold: 30
+              periodSeconds: 10
+              timeoutSeconds: 12
+        resources:
+          requests: {cpu: 50m, memory: 128Mi}
+          limits: {memory: 1Gi}
+        securityContext:
+          allowPrivilegeEscalation: false
+          seccompProfile: {type: RuntimeDefault}
+defaultPodOptions:
+  nodeSelector: {homelab.bupd.xyz/workload-pool: media}
+  securityContext: {fsGroup: 1000, fsGroupChangePolicy: OnRootMismatch}
+  terminationGracePeriodSeconds: 60
+service:
+  main:
+    controller: main
+    ports:
+      http: {port: 9091, primary: true, protocol: HTTP}
+      peer-tcp: {port: 51413, protocol: TCP}
+      peer-udp: {port: 51413, protocol: UDP}
+persistence:
+  config:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    storageClass: local-path
+    retain: true
+    advancedMounts:
+      main:
+        main: [{path: /config}]
+        seed-config: [{path: /config}]
+  media:
+    type: persistentVolumeClaim
+    existingClaim: media-data
+    globalMounts:
+      - path: /data
+      - path: /downloads
+        subPath: downloads
+  bootstrap:
+    type: configMap
+    name: media-bootstrap
+    advancedMounts:
+      main:
+        seed-config:
+          - path: /bootstrap/seed-transmission-config.py
+            subPath: seed-transmission-config.py
+            readOnly: true
+  watch: {type: emptyDir, globalMounts: [{path: /watch}]}
+  tmp: {type: emptyDir, globalMounts: [{path: /tmp}]}

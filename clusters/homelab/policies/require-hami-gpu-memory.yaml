@@ -1,0 +1,66 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: require-hami-gpu-memory.homelab.bupd.xyz
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - pods
+  validations:
+    - expression: >-
+        object.spec.containers.all(container,
+          !has(container.resources) ||
+          (
+            (!has(container.resources.requests) || !('nvidia.com/gpu' in container.resources.requests)) &&
+            (!has(container.resources.limits) || !('nvidia.com/gpu' in container.resources.limits))
+          ) ||
+          (has(container.resources.limits) && 'nvidia.com/gpumem' in container.resources.limits)
+        )
+      message: >-
+        GPU workloads must specify nvidia.com/gpumem; unbounded
+        nvidia.com/gpu allocations are forbidden.
+      reason: Invalid
+    - expression: >-
+        !has(object.spec.initContainers) || object.spec.initContainers.all(container,
+          !has(container.resources) ||
+          (
+            (!has(container.resources.requests) || !('nvidia.com/gpu' in container.resources.requests)) &&
+            (!has(container.resources.limits) || !('nvidia.com/gpu' in container.resources.limits))
+          ) ||
+          (has(container.resources.limits) && 'nvidia.com/gpumem' in container.resources.limits)
+        )
+      message: >-
+        GPU init containers must specify nvidia.com/gpumem; unbounded
+        nvidia.com/gpu allocations are forbidden.
+      reason: Invalid
+    - expression: >-
+        !has(object.spec.ephemeralContainers) || object.spec.ephemeralContainers.all(container,
+          !has(container.resources) ||
+          (
+            (!has(container.resources.requests) || !('nvidia.com/gpu' in container.resources.requests)) &&
+            (!has(container.resources.limits) || !('nvidia.com/gpu' in container.resources.limits))
+          ) ||
+          (has(container.resources.limits) && 'nvidia.com/gpumem' in container.resources.limits)
+        )
+      message: >-
+        GPU ephemeral containers must specify nvidia.com/gpumem; unbounded
+        nvidia.com/gpu allocations are forbidden.
+      reason: Invalid
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: require-hami-gpu-memory.homelab.bupd.xyz
+spec:
+  policyName: require-hami-gpu-memory.homelab.bupd.xyz
+  validationActions:
+    - Deny

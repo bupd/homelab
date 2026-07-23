@@ -1,0 +1,5 @@
+dist/
+*.dec.yaml
+*.plain.yaml
+/tools/music/__pycache__
+/tools/homelab-cli/target/

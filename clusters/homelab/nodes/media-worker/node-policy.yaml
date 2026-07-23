@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Node
+metadata:
+  name: media-worker
+  labels:
+    gpu: "on"
+    homelab.bupd.xyz/node-class: worker
+    homelab.bupd.xyz/workload-pool: media
+    homelab.bupd.xyz/storage: media
+    homelab.bupd.xyz/accelerator: nvidia
+    # The minimal K3s system image omits ID and VERSION_ID from os-release,
+    # so Node Feature Discovery cannot derive these fixed node facts.
+    feature.node.kubernetes.io/system-os_release.ID: k3s
+    feature.node.kubernetes.io/system-os_release.VERSION_ID: "1.36.2"
+    feature.node.kubernetes.io/pci-10de.present: "true"
+    nvidia.com/gpu.present: "true"

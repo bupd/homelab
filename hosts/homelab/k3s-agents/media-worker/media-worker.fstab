@@ -1,0 +1,2 @@
+# Homelab media disk (WDC Elements, NTFS label: Bupd_Data)
+UUID=ACCA4642CA460952 /home/bupd/hdd/data ntfs3 rw,nofail,x-systemd.automount,x-systemd.device-timeout=5min,x-systemd.mount-timeout=5min,uid=1000,gid=1000,umask=0022,windows_names 0 0

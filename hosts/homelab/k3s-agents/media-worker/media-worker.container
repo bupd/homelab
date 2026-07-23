@@ -1,0 +1,77 @@
+[Unit]
+Description=K3s media-worker agent
+Documentation=https://docs.k3s.io/
+Wants=network-online.target
+Wants=systemd-time-wait-sync.service time-sync.target
+After=network-online.target systemd-time-wait-sync.service time-sync.target k3s.service
+Requires=k3s.service
+
+[Container]
+Image=docker.io/rancher/k3s:v1.36.2-k3s1
+Pull=never
+ContainerName=media-worker
+HostName=media-worker
+# This container is a Kubernetes node, so Podman's per-container default of
+# 2048 PIDs is too small for kubelet, containerd, and all nested workloads.
+PidsLimit=-1
+
+Network=media-worker.network
+IP=10.89.0.2
+
+# K3s runs its own containerd and CNI inside this system container. NVIDIA CDI
+# gives the worker container the physical GPU; the in-cluster GPU operator is
+# responsible for exposing it to application Pods.
+PodmanArgs=--privileged --device=nvidia.com/gpu=all --security-opt=label=disable
+
+Volume=/etc/rancher/k3s-media-worker/config.yaml:/etc/rancher/k3s/config.yaml:ro
+Volume=/etc/rancher/k3s-media-worker/token:/run/secrets/k3s-agent-token:ro
+Volume=/etc/rancher/k3s-media-worker/node:/etc/rancher/node
+Volume=/var/lib/rancher/k3s-media-worker:/var/lib/rancher/k3s
+Volume=/var/lib/rancher/k3s-media-worker-kubelet:/var/lib/kubelet:rshared
+Volume=/var/lib/rancher/k3s-media-worker-cni:/var/lib/cni
+Volume=/var/log/k3s-media-worker:/var/log
+Volume=/var/lib/nvidia/k3s-run:/run/nvidia:rshared
+Volume=/home/bupd/hdd/data:/home/bupd/hdd/data:rw
+Volume=/lib/modules:/lib/modules:ro
+Volume=/etc/cdi:/etc/cdi:ro
+# The host's CDI spec injects dynamically linked NVIDIA tools and libraries.
+# Supply the glibc runtime that the intentionally tiny K3s image does not carry,
+# so GPU Operator can validate the pre-installed host driver.
+Volume=/usr/lib/ld-linux-x86-64.so.2:/lib64/ld-linux-x86-64.so.2:ro
+Volume=/usr/lib/libc.so.6:/usr/lib/libc.so.6:ro
+Volume=/usr/lib/libpthread.so.0:/usr/lib/libpthread.so.0:ro
+Volume=/usr/lib/libm.so.6:/usr/lib/libm.so.6:ro
+Volume=/usr/lib/libdl.so.2:/usr/lib/libdl.so.2:ro
+Volume=/usr/lib/librt.so.1:/usr/lib/librt.so.1:ro
+Volume=/usr/lib/libresolv.so.2:/usr/lib/libresolv.so.2:ro
+Volume=/usr/lib/libcap.so.2:/usr/lib/libcap.so.2:ro
+Volume=/usr/lib/libelf.so.1:/usr/lib/libelf.so.1:ro
+Volume=/usr/lib/libtirpc.so.3:/usr/lib/libtirpc.so.3:ro
+Volume=/usr/lib/libseccomp.so.2:/usr/lib/libseccomp.so.2:ro
+Volume=/usr/lib/libz.so.1:/usr/lib/libz.so.1:ro
+Volume=/usr/lib/libzstd.so.1:/usr/lib/libzstd.so.1:ro
+Volume=/usr/lib/libgssapi_krb5.so.2:/usr/lib/libgssapi_krb5.so.2:ro
+Volume=/usr/lib/libkrb5.so.3:/usr/lib/libkrb5.so.3:ro
+Volume=/usr/lib/libk5crypto.so.3:/usr/lib/libk5crypto.so.3:ro
+Volume=/usr/lib/libcom_err.so.2:/usr/lib/libcom_err.so.2:ro
+Volume=/usr/lib/libkrb5support.so.0:/usr/lib/libkrb5support.so.0:ro
+Volume=/usr/lib/libkeyutils.so.1:/usr/lib/libkeyutils.so.1:ro
+Volume=/sbin/ldconfig:/sbin/ldconfig:ro
+# Nested K3s uses the host's already-installed NVIDIA Container Toolkit. This
+# avoids the GPU Operator toolkit DaemonSet reloading containerd and thereby
+# terminating the all-in-one K3s agent process.
+Volume=/usr/bin/nvidia-container-runtime:/usr/bin/nvidia-container-runtime:ro
+Volume=/usr/bin/nvidia-container-runtime-hook:/usr/bin/nvidia-container-runtime-hook:ro
+Volume=/usr/bin/nvidia-container-cli:/usr/bin/nvidia-container-cli:ro
+Volume=/usr/bin/nvidia-ctk:/usr/bin/nvidia-ctk:ro
+Volume=/usr/lib/libnvidia-container.so.1:/usr/lib/libnvidia-container.so.1:ro
+Volume=/usr/lib/libnvidia-container-go.so.1:/usr/lib/libnvidia-container-go.so.1:ro
+Volume=/etc/nvidia-container-runtime:/etc/nvidia-container-runtime:ro
+
+Exec=agent
+
+[Service]
+ExecStartPre=/usr/local/lib/homelab/refresh-nvidia-cdi.sh
+Restart=always
+RestartSec=5
+TimeoutStartSec=900
