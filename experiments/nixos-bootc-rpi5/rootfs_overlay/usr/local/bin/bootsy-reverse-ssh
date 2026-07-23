@@ -1,0 +1,50 @@
+#!/bin/sh
+set -eu
+
+log() {
+    systemd-cat -t bootsy-reverse-ssh -p info printf '%s\n' "$*" 2>/dev/null || printf '%s\n' "$*" >&2
+}
+
+enabled="${BOOTSY_REVERSE_SSH_ENABLE:-1}"
+if [ "$enabled" != "1" ] && [ "$enabled" != "true" ] && [ "$enabled" != "yes" ]; then
+    log "reverse SSH disabled"
+    exit 0
+fi
+
+host="${BOOTSY_REVERSE_SSH_HOST:-}"
+user="${BOOTSY_REVERSE_SSH_USER:-}"
+host_port="${BOOTSY_REVERSE_SSH_PORT:-22}"
+remote_port="${BOOTSY_REVERSE_SSH_REMOTE_PORT:-2222}"
+remote_bind="${BOOTSY_REVERSE_SSH_REMOTE_BIND:-127.0.0.1}"
+local_port="${BOOTSY_REVERSE_SSH_LOCAL_PORT:-22}"
+strict_host_key="${BOOTSY_REVERSE_SSH_STRICT_HOST_KEY:-accept-new}"
+key_src="${BOOTSY_REVERSE_SSH_KEY:-/boot/firmware/bootsy-reverse-ssh.key}"
+
+if [ -z "$host" ] || [ -z "$user" ]; then
+    log "reverse SSH enabled but BOOTSY_REVERSE_SSH_HOST or BOOTSY_REVERSE_SSH_USER is missing"
+    sleep 60
+    exit 1
+fi
+
+if [ ! -r "$key_src" ]; then
+    log "reverse SSH key is missing: $key_src"
+    sleep 60
+    exit 1
+fi
+
+install -d -m 0700 /run/bootsy
+install -m 0600 "$key_src" /run/bootsy/reverse-ssh.key
+
+log "opening reverse SSH tunnel ${remote_bind}:${remote_port} -> localhost:${local_port} via ${user}@${host}:${host_port}"
+
+exec ssh \
+    -i /run/bootsy/reverse-ssh.key \
+    -N \
+    -o BatchMode=yes \
+    -o ExitOnForwardFailure=yes \
+    -o ServerAliveInterval=15 \
+    -o ServerAliveCountMax=2 \
+    -o StrictHostKeyChecking="$strict_host_key" \
+    -R "${remote_bind}:${remote_port}:localhost:${local_port}" \
+    -p "$host_port" \
+    "${user}@${host}"

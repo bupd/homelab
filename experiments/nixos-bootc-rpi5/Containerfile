@@ -1,0 +1,17 @@
+ARG ROOTFS_TAR=build/nixos-bootc-rpi5-rootfs.tar
+
+FROM scratch AS rootfs
+ARG ROOTFS_TAR
+ADD ${ROOTFS_TAR} /
+
+FROM scratch
+COPY --from=rootfs / /
+
+LABEL containers.bootc=1
+LABEL ostree.bootable=1
+LABEL org.opencontainers.image.title="nixos-bootc-rpi5"
+LABEL org.opencontainers.image.description="Experimental NixOS bootc image for Raspberry Pi 5"
+
+ENV PATH="/run/current-system/sw/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+CMD ["/sbin/init"]

@@ -1,0 +1,9 @@
+[package]
+name = "ostree-encapsulate"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+ostree-ext = "0.15.3"
+tokio = { version = "1", features = ["macros", "rt"] }
