@@ -3,6 +3,8 @@ use std::{
     fmt::Display,
     io::{self, IsTerminal},
     process::{Command as ProcessCommand, ExitCode, Output, Stdio},
+    thread,
+    time::Duration,
 };
 
 use clap::{Parser, Subcommand};
@@ -14,6 +16,7 @@ const SYSTEMCTL: &str = "/usr/bin/systemctl";
 const FINDMNT: &str = "/usr/bin/findmnt";
 const SYNC: &str = "/usr/bin/sync";
 const UMOUNT: &str = "/usr/bin/umount";
+const K3S_BINARY: &str = "/usr/local/bin/k3s";
 const MEDIA_MOUNT: &str = "/home/bupd/hdd/data";
 const MEDIA_DEVICE: &str = "/dev/disk/by-uuid/ACCA4642CA460952";
 const K3S: &str = "k3s.service";
@@ -45,6 +48,8 @@ struct Cli {
 enum UserCommand {
     /// Mount storage and start the K3s control plane and worker.
     Up,
+    /// Start the homelab with only Jellyfin and Immich workloads enabled.
+    Media,
     /// Stop every Kubernetes workload and release host resources.
     Down,
     /// Show service and storage state without changing anything.
@@ -55,6 +60,7 @@ impl UserCommand {
     const fn as_str(self) -> &'static str {
         match self {
             Self::Up => "up",
+            Self::Media => "media",
             Self::Down => "down",
             Self::Status => "status",
         }
@@ -114,6 +120,7 @@ fn run_admin(command: UserCommand) -> Result<()> {
     heading(command);
     match command {
         UserCommand::Up => up(),
+        UserCommand::Media => media(),
         UserCommand::Down => down(),
         UserCommand::Status => status(),
     }
@@ -135,6 +142,101 @@ fn down() -> Result<()> {
     ensure_service(K3S, DesiredState::Stopped)?;
     flush_and_unmount_media_disk()?;
     success("Homelab is offline. The media disk is unmounted.");
+    Ok(())
+}
+
+fn media() -> Result<()> {
+    up()?;
+    wait_for_kubernetes_api()?;
+
+    step(
+        "Applying the Jellyfin and Immich workload profile",
+        StepState::Working,
+    );
+    kubectl_success(&[
+        "scale",
+        "deployment",
+        "--namespace",
+        "flux-system",
+        "--all",
+        "--replicas=0",
+    ])?;
+    kubectl_success(&[
+        "scale",
+        "deployment",
+        "--namespace",
+        "media",
+        "--replicas=0",
+        "bazarr",
+        "janitorr",
+        "jellyseerr",
+        "lidarr",
+        "prowlarr",
+        "radarr",
+        "sonarr",
+        "transmission",
+        "whisparr",
+    ])?;
+    kubectl_success(&[
+        "scale",
+        "deployment",
+        "--namespace",
+        "observability",
+        "--all",
+        "--replicas=0",
+    ])?;
+    kubectl_success(&[
+        "scale",
+        "statefulset",
+        "--namespace",
+        "observability",
+        "--all",
+        "--replicas=0",
+    ])?;
+    kubectl_success(&[
+        "delete",
+        "daemonset",
+        "--namespace",
+        "observability",
+        "--all",
+        "--ignore-not-found",
+    ])?;
+    kubectl_success(&[
+        "delete",
+        "ingress",
+        "--namespace",
+        "observability",
+        "--all",
+        "--ignore-not-found",
+    ])?;
+    kubectl_success(&[
+        "delete",
+        "ingress",
+        "--namespace",
+        "flux-system",
+        "flux",
+        "--ignore-not-found",
+    ])?;
+    kubectl_success(&[
+        "delete",
+        "ingress",
+        "--namespace",
+        "media",
+        "radarr",
+        "sonarr",
+        "lidarr",
+        "whisparr",
+        "prowlarr",
+        "transmission",
+        "bazarr",
+        "jellyseerr",
+        "--ignore-not-found",
+    ])?;
+    scale_non_media_tailscale_proxies()?;
+    step(
+        "Jellyfin and Immich workload profile is active",
+        StepState::Done,
+    );
     Ok(())
 }
 
@@ -234,6 +336,45 @@ fn media_device_has_mounts() -> Result<bool> {
     Err(format!("could not inspect {MEDIA_DEVICE}: {stderr}"))
 }
 
+fn wait_for_kubernetes_api() -> Result<()> {
+    for _ in 0..60 {
+        if command_success(K3S_BINARY, &["kubectl", "get", "--raw=/readyz"])? {
+            return Ok(());
+        }
+        thread::sleep(Duration::from_secs(2));
+    }
+    Err("Kubernetes did not become ready within two minutes".to_owned())
+}
+
+fn scale_non_media_tailscale_proxies() -> Result<()> {
+    let output = kubectl_success(&[
+        "get",
+        "statefulset",
+        "--namespace",
+        "tailscale",
+        "--output=name",
+    ])?;
+
+    for resource in String::from_utf8_lossy(&output.stdout).lines() {
+        let resource = resource.trim();
+        if resource.is_empty() || is_media_tailscale_proxy(resource) {
+            continue;
+        }
+        kubectl_success(&[
+            "scale",
+            "--namespace",
+            "tailscale",
+            "--replicas=0",
+            resource,
+        ])?;
+    }
+    Ok(())
+}
+
+fn is_media_tailscale_proxy(resource: &str) -> bool {
+    resource.contains("ts-immich-") || resource.contains("ts-jellyfin-")
+}
+
 #[derive(Clone, Copy)]
 enum DesiredState {
     Running,
@@ -312,6 +453,28 @@ fn run_success(program: &str, arguments: &[&str]) -> Result<Output> {
     ))
 }
 
+fn kubectl_success(arguments: &[&str]) -> Result<Output> {
+    let output = ProcessCommand::new(K3S_BINARY)
+        .arg("kubectl")
+        .args(arguments)
+        .output()
+        .map_err(|error| format!("could not run k3s kubectl: {error}"))?;
+    if output.status.success() {
+        return Ok(output);
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+    let detail = if stderr.is_empty() {
+        format!("exit status {}", output.status)
+    } else {
+        stderr
+    };
+    Err(format!(
+        "k3s kubectl {} failed: {detail}",
+        arguments.join(" ")
+    ))
+}
+
 fn is_root() -> bool {
     // SAFETY: geteuid has no preconditions and does not dereference pointers.
     unsafe { geteuid() == 0 }
@@ -366,6 +529,7 @@ mod tests {
     #[test]
     fn command_names_are_stable() {
         assert_eq!(UserCommand::Up.as_str(), "up");
+        assert_eq!(UserCommand::Media.as_str(), "media");
         assert_eq!(UserCommand::Down.as_str(), "down");
         assert_eq!(UserCommand::Status.as_str(), "status");
     }
@@ -380,5 +544,18 @@ mod tests {
     fn capitalization_keeps_the_rest_of_a_verb() {
         assert_eq!(capitalize("start"), "Start");
         assert_eq!(capitalize(""), "");
+    }
+
+    #[test]
+    fn only_immich_and_jellyfin_tailscale_proxies_are_kept() {
+        assert!(is_media_tailscale_proxy(
+            "statefulset.apps/ts-immich-example"
+        ));
+        assert!(is_media_tailscale_proxy(
+            "statefulset.apps/ts-jellyfin-example"
+        ));
+        assert!(!is_media_tailscale_proxy(
+            "statefulset.apps/ts-radarr-example"
+        ));
     }
 }

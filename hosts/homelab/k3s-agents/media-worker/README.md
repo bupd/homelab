@@ -67,13 +67,17 @@ The host does not start Kubernetes automatically at boot. The worker Quadlet is
 intentionally not linked to a boot target. Use:
 
     homelab up
+    homelab media
     homelab down
     homelab status
 
 Every command is idempotent. Up enables the media automount, mounts the disk,
-and starts the control plane and worker. Down stops every Pod by stopping the
-worker first, then stops the control plane, flushes pending writes, disables
-the automount, and cleanly unmounts the media disk.
+and starts the control plane and worker. Media starts the homelab, then retains
+only Jellyfin, Immich, and their required database, networking, GPU, and core
+controllers; it stops automation, observability, Flux, and their extra
+Tailscale proxies. Down stops every Pod by stopping the worker first, then
+stops the control plane, flushes pending writes, disables the automount, and
+cleanly unmounts the media disk.
 
 The existing computer shutdown workflow remains separate:
 
