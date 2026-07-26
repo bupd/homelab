@@ -254,7 +254,9 @@ fn status() -> Result<()> {
 }
 
 fn start_mount() -> Result<()> {
-    ensure_service(MEDIA_AUTOMOUNT, DesiredState::Running)?;
+    // systemd refuses to enable an automount on a path that is already a
+    // mount point. This can happen after an interrupted shutdown or a manual
+    // mount, but the storage is already ready for the worker in that case.
     if command_success(SYSTEMCTL, &["is-active", "--quiet", MEDIA_MOUNT_UNIT])? {
         step(
             format!("Media disk is already mounted at {MEDIA_MOUNT}"),
@@ -262,6 +264,8 @@ fn start_mount() -> Result<()> {
         );
         return Ok(());
     }
+
+    ensure_service(MEDIA_AUTOMOUNT, DesiredState::Running)?;
 
     // A prior failed preflight must not block a later clean mount attempt.
     run_success(
@@ -397,13 +401,19 @@ fn ensure_service(unit: &str, desired: DesiredState) -> Result<()> {
     }
 
     step(format!("{} {unit}", capitalize(verb)), StepState::Working);
-    run_success(SYSTEMCTL, &[verb, unit])?;
+    let command_result = run_success(SYSTEMCTL, &[verb, unit]);
     let active_after = command_success(SYSTEMCTL, &["is-active", "--quiet", unit])?;
-    let reached_state = matches!(desired, DesiredState::Running) == active_after;
+    let reached_state = desired_state_reached(desired, active_after);
     if !reached_state {
+        let command_error = command_result.err().unwrap_or_default();
+        let detail = if command_error.is_empty() {
+            String::new()
+        } else {
+            format!(" ({command_error})")
+        };
         return Err(format!(
-            "{unit} did not become {}; inspect it with: journalctl -u {unit} -n 100 --no-pager",
-            state_name(desired)
+            "{unit} did not become {}{detail}; inspect it with: journalctl -u {unit} -n 100 --no-pager",
+            state_name(desired),
         ));
     }
     step(
@@ -411,6 +421,10 @@ fn ensure_service(unit: &str, desired: DesiredState) -> Result<()> {
         StepState::Done,
     );
     Ok(())
+}
+
+fn desired_state_reached(desired: DesiredState, active: bool) -> bool {
+    matches!(desired, DesiredState::Running) == active
 }
 
 fn print_service_status(label: &str, unit: &str) -> Result<()> {
@@ -538,6 +552,14 @@ mod tests {
     fn service_state_names_are_human_readable() {
         assert_eq!(state_name(DesiredState::Running), "running");
         assert_eq!(state_name(DesiredState::Stopped), "stopped");
+    }
+
+    #[test]
+    fn desired_service_state_matches_systemd_activity() {
+        assert!(desired_state_reached(DesiredState::Running, true));
+        assert!(!desired_state_reached(DesiredState::Running, false));
+        assert!(desired_state_reached(DesiredState::Stopped, false));
+        assert!(!desired_state_reached(DesiredState::Stopped, true));
     }
 
     #[test]
