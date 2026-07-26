@@ -1,6 +1,11 @@
+global:
+  createDefaultServiceAccount: false
+
 controllers:
   web:
     replicas: 1
+    serviceAccount: &defaultServiceAccount
+      name: default
     strategy: Recreate
     containers:
       app:
@@ -79,6 +84,7 @@ controllers:
 
   worker:
     replicas: 1
+    serviceAccount: *defaultServiceAccount
     strategy: Recreate
     containers:
       app:
@@ -100,6 +106,7 @@ controllers:
 
   redis:
     replicas: 1
+    serviceAccount: *defaultServiceAccount
     strategy: Recreate
     containers:
       app:
@@ -147,6 +154,7 @@ controllers:
 
   migration:
     type: job
+    serviceAccount: *defaultServiceAccount
     annotations:
       helm.sh/hook: pre-install,pre-upgrade
       helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
@@ -180,6 +188,7 @@ controllers:
         securityContext: *sureSecurityContext
 
 defaultPodOptions:
+  automountServiceAccountToken: false
   nodeSelector:
     homelab.bupd.xyz/workload-pool: media
   securityContext:
