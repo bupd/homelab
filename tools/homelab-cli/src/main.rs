@@ -150,7 +150,7 @@ fn media() -> Result<()> {
     wait_for_kubernetes_api()?;
 
     step(
-        "Applying the Jellyfin and Immich workload profile",
+        "Applying the Jellyfin, Immich, and Sure workload profile",
         StepState::Working,
     );
     kubectl_success(&[
@@ -232,9 +232,9 @@ fn media() -> Result<()> {
         "jellyseerr",
         "--ignore-not-found",
     ])?;
-    scale_non_media_tailscale_proxies()?;
+    scale_non_retained_tailscale_proxies()?;
     step(
-        "Jellyfin and Immich workload profile is active",
+        "Jellyfin, Immich, and Sure workload profile is active",
         StepState::Done,
     );
     Ok(())
@@ -350,7 +350,7 @@ fn wait_for_kubernetes_api() -> Result<()> {
     Err("Kubernetes did not become ready within two minutes".to_owned())
 }
 
-fn scale_non_media_tailscale_proxies() -> Result<()> {
+fn scale_non_retained_tailscale_proxies() -> Result<()> {
     let output = kubectl_success(&[
         "get",
         "statefulset",
@@ -361,7 +361,7 @@ fn scale_non_media_tailscale_proxies() -> Result<()> {
 
     for resource in String::from_utf8_lossy(&output.stdout).lines() {
         let resource = resource.trim();
-        if resource.is_empty() || is_media_tailscale_proxy(resource) {
+        if resource.is_empty() || is_retained_tailscale_proxy(resource) {
             continue;
         }
         kubectl_success(&[
@@ -375,8 +375,10 @@ fn scale_non_media_tailscale_proxies() -> Result<()> {
     Ok(())
 }
 
-fn is_media_tailscale_proxy(resource: &str) -> bool {
-    resource.contains("ts-immich-") || resource.contains("ts-jellyfin-")
+fn is_retained_tailscale_proxy(resource: &str) -> bool {
+    resource.contains("ts-immich-")
+        || resource.contains("ts-jellyfin-")
+        || resource.contains("ts-sure-")
 }
 
 #[derive(Clone, Copy)]
@@ -569,14 +571,17 @@ mod tests {
     }
 
     #[test]
-    fn only_immich_and_jellyfin_tailscale_proxies_are_kept() {
-        assert!(is_media_tailscale_proxy(
+    fn only_selected_tailscale_proxies_are_kept() {
+        assert!(is_retained_tailscale_proxy(
             "statefulset.apps/ts-immich-example"
         ));
-        assert!(is_media_tailscale_proxy(
+        assert!(is_retained_tailscale_proxy(
             "statefulset.apps/ts-jellyfin-example"
         ));
-        assert!(!is_media_tailscale_proxy(
+        assert!(is_retained_tailscale_proxy(
+            "statefulset.apps/ts-sure-example"
+        ));
+        assert!(!is_retained_tailscale_proxy(
             "statefulset.apps/ts-radarr-example"
         ));
     }
