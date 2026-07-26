@@ -14,6 +14,14 @@ controllers:
           tag: stable
           digest: sha256:96155b20c0b71f8e2ab960ab5aba8fba9df64c6a40ec581eca20af2b20ab089c
           pullPolicy: IfNotPresent
+        command:
+          - /bin/bash
+          - -lc
+        args:
+          - |
+            install -d -m 0700 /tmp/sure
+            export TMPDIR=/tmp/sure
+            exec /rails/bin/docker-entrypoint ./bin/rails server
         env: &sureEnv
           SELF_HOSTED: "true"
           ONBOARDING_STATE: open
@@ -93,7 +101,10 @@ controllers:
           - /bin/bash
           - -lc
         args:
-          - bundle exec sidekiq -C config/sidekiq.yml
+          - |
+            install -d -m 0700 /tmp/sure
+            export TMPDIR=/tmp/sure
+            exec bundle exec sidekiq -C config/sidekiq.yml
         env: *sureEnv
         envFrom: *sureEnvFrom
         resources:
@@ -148,7 +159,9 @@ controllers:
           capabilities:
             drop:
               - ALL
+          runAsGroup: 999
           runAsNonRoot: true
+          runAsUser: 999
           seccompProfile:
             type: RuntimeDefault
 
@@ -172,6 +185,8 @@ controllers:
         args:
           - |
             set -euo pipefail
+            install -d -m 0700 /tmp/sure
+            export TMPDIR=/tmp/sure
             until pg_isready -h "${DB_HOST}" -p "${DB_PORT}" -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"; do
               echo "waiting for CloudNativePG"
               sleep 5
