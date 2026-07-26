@@ -1,0 +1,99 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sure-storage-backup
+  namespace: sure
+  labels:
+    app.kubernetes.io/name: sure
+    app.kubernetes.io/component: storage-backup
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 2
+  schedule: "30 3 * * *"
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 1
+  timeZone: Asia/Kolkata
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 3600
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: sure
+            app.kubernetes.io/component: storage-backup
+        spec:
+          nodeSelector:
+            kubernetes.io/hostname: media-worker
+          restartPolicy: Never
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: archive
+              image: docker.io/library/busybox:1.37.0@sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -eu
+                - -c
+                - |
+                  backup_dir=/backups/storage
+                  today="$(date +%F)"
+                  final="${backup_dir}/sure-storage-${today}.tar.gz"
+                  temporary="${final}.partial"
+
+                  mkdir -p "${backup_dir}"
+                  rm -f "${temporary}"
+                  tar -czf "${temporary}" -C /source .
+                  mv "${temporary}" "${final}"
+
+                  if [ "$(date +%u)" = 7 ]; then
+                    cp "${final}" \
+                      "${backup_dir}/sure-storage-weekly-${today}.tar.gz"
+                  fi
+
+                  find "${backup_dir}" -maxdepth 1 -type f \
+                    -name 'sure-storage-????-??-??.tar.gz' \
+                    -mtime +6 -delete
+
+                  count=0
+                  for weekly in $(ls -1t "${backup_dir}"/sure-storage-weekly-*.tar.gz 2>/dev/null || true); do
+                    count=$((count + 1))
+                    if [ "${count}" -gt 4 ]; then
+                      rm -f "${weekly}"
+                    fi
+                  done
+              resources:
+                limits:
+                  memory: 512Mi
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+                runAsGroup: 0
+                runAsNonRoot: false
+                runAsUser: 0
+              volumeMounts:
+                - mountPath: /backups
+                  name: backups
+                - mountPath: /source
+                  name: storage
+                  readOnly: true
+                - mountPath: /tmp
+                  name: tmp
+          volumes:
+            - hostPath:
+                path: /home/bupd/hdd/data/backups/sure
+                type: DirectoryOrCreate
+              name: backups
+            - name: storage
+              persistentVolumeClaim:
+                claimName: sure-storage
+            - emptyDir: {}
+              name: tmp

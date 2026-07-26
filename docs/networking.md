@@ -67,6 +67,7 @@ identity. The Kubernetes cluster name is not included in user-facing URLs.
 | --- | --- |
 | Immich | `https://immich.tail6c5ea9.ts.net` |
 | Jellyfin | `https://jellyfin.tail6c5ea9.ts.net` |
+| Sure | `https://sure.tail6c5ea9.ts.net` |
 | Sonarr | `https://sonarr.tail6c5ea9.ts.net` |
 | Radarr | `https://radarr.tail6c5ea9.ts.net` |
 | Prowlarr | `https://prowlarr.tail6c5ea9.ts.net` |

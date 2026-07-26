@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sure
+  labels:
+    app.kubernetes.io/name: sure
+    app.kubernetes.io/part-of: personal-services

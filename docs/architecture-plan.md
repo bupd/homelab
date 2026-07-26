@@ -104,6 +104,7 @@ as an external URL.
 | Prometheus UI | `https://prometheus.tail6c5ea9.ts.net` |
 | Photos | `https://immich.tail6c5ea9.ts.net` |
 | Video, anime, and live TV | `https://jellyfin.tail6c5ea9.ts.net` |
+| Personal finance | `https://sure.tail6c5ea9.ts.net` |
 | Music | `https://navidrome.tail6c5ea9.ts.net` |
 | Books | `https://kavita.tail6c5ea9.ts.net` or `https://booklore.tail6c5ea9.ts.net` |
 | Arr and supporting UIs | `https://<service>.tail6c5ea9.ts.net` |
@@ -218,6 +219,8 @@ apps/
   media/
     immich/                    # Immich and its dedicated PostgreSQL resources
     jellyfin/                  # Jellyfin and related application config
+  personal/
+    sure/                      # Sure, Redis, CNPG, and on-disk backups
 platform/
   controllers/                 # Shared operators such as CloudNativePG
   networking/                  # Tailscale Operator and private ingress
