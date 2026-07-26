@@ -135,7 +135,8 @@ validate-kustomize:
       apps/media/automation \
       apps/media/immich \
       apps/media/immich/database \
-      apps/media/immich/app; do
+      apps/media/immich/app \
+      apps/personal/sure; do
       kubectl kustomize "${directory}" >/dev/null
     done
 
@@ -165,6 +166,10 @@ validate-helm:
         --namespace media \
         --values "${values}" >/dev/null
     done
+    helm template sure oci://ghcr.io/bjw-s-labs/helm/app-template \
+      --version 5.0.1 \
+      --namespace sure \
+      --values apps/personal/sure/values.yaml >/dev/null
     helm template flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
       --version 0.55.0 \
       --namespace flux-system \
@@ -217,7 +222,8 @@ validate-sops:
 # Hunt stale instance1 and ins1 names.
 validate-names:
     #!/usr/bin/env bash
-    if rg -n -i 'instance1|ins1' . -g '!**/.git/**' -g '!Justfile'; then
+    if rg -n -i 'instance1|ins1' . \
+      -g '!**/.git/**' -g '!**/target/**' -g '!Justfile'; then
       echo 'stale cluster name found' >&2
       exit 1
     fi

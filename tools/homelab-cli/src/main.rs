@@ -150,7 +150,7 @@ fn media() -> Result<()> {
     wait_for_kubernetes_api()?;
 
     step(
-        "Applying the Jellyfin and Immich workload profile",
+        "Applying the Jellyfin, Immich, and Sure workload profile",
         StepState::Working,
     );
     kubectl_success(&[
@@ -232,9 +232,9 @@ fn media() -> Result<()> {
         "jellyseerr",
         "--ignore-not-found",
     ])?;
-    scale_non_media_tailscale_proxies()?;
+    scale_non_retained_tailscale_proxies()?;
     step(
-        "Jellyfin and Immich workload profile is active",
+        "Jellyfin, Immich, and Sure workload profile is active",
         StepState::Done,
     );
     Ok(())
@@ -254,7 +254,9 @@ fn status() -> Result<()> {
 }
 
 fn start_mount() -> Result<()> {
-    ensure_service(MEDIA_AUTOMOUNT, DesiredState::Running)?;
+    // systemd refuses to enable an automount on a path that is already a
+    // mount point. This can happen after an interrupted shutdown or a manual
+    // mount, but the storage is already ready for the worker in that case.
     if command_success(SYSTEMCTL, &["is-active", "--quiet", MEDIA_MOUNT_UNIT])? {
         step(
             format!("Media disk is already mounted at {MEDIA_MOUNT}"),
@@ -262,6 +264,8 @@ fn start_mount() -> Result<()> {
         );
         return Ok(());
     }
+
+    ensure_service(MEDIA_AUTOMOUNT, DesiredState::Running)?;
 
     // A prior failed preflight must not block a later clean mount attempt.
     run_success(
@@ -346,7 +350,7 @@ fn wait_for_kubernetes_api() -> Result<()> {
     Err("Kubernetes did not become ready within two minutes".to_owned())
 }
 
-fn scale_non_media_tailscale_proxies() -> Result<()> {
+fn scale_non_retained_tailscale_proxies() -> Result<()> {
     let output = kubectl_success(&[
         "get",
         "statefulset",
@@ -357,7 +361,7 @@ fn scale_non_media_tailscale_proxies() -> Result<()> {
 
     for resource in String::from_utf8_lossy(&output.stdout).lines() {
         let resource = resource.trim();
-        if resource.is_empty() || is_media_tailscale_proxy(resource) {
+        if resource.is_empty() || is_retained_tailscale_proxy(resource) {
             continue;
         }
         kubectl_success(&[
@@ -371,8 +375,10 @@ fn scale_non_media_tailscale_proxies() -> Result<()> {
     Ok(())
 }
 
-fn is_media_tailscale_proxy(resource: &str) -> bool {
-    resource.contains("ts-immich-") || resource.contains("ts-jellyfin-")
+fn is_retained_tailscale_proxy(resource: &str) -> bool {
+    resource.contains("ts-immich-")
+        || resource.contains("ts-jellyfin-")
+        || resource.contains("ts-sure-")
 }
 
 #[derive(Clone, Copy)]
@@ -397,13 +403,19 @@ fn ensure_service(unit: &str, desired: DesiredState) -> Result<()> {
     }
 
     step(format!("{} {unit}", capitalize(verb)), StepState::Working);
-    run_success(SYSTEMCTL, &[verb, unit])?;
+    let command_result = run_success(SYSTEMCTL, &[verb, unit]);
     let active_after = command_success(SYSTEMCTL, &["is-active", "--quiet", unit])?;
-    let reached_state = matches!(desired, DesiredState::Running) == active_after;
+    let reached_state = desired_state_reached(desired, active_after);
     if !reached_state {
+        let command_error = command_result.err().unwrap_or_default();
+        let detail = if command_error.is_empty() {
+            String::new()
+        } else {
+            format!(" ({command_error})")
+        };
         return Err(format!(
-            "{unit} did not become {}; inspect it with: journalctl -u {unit} -n 100 --no-pager",
-            state_name(desired)
+            "{unit} did not become {}{detail}; inspect it with: journalctl -u {unit} -n 100 --no-pager",
+            state_name(desired),
         ));
     }
     step(
@@ -411,6 +423,10 @@ fn ensure_service(unit: &str, desired: DesiredState) -> Result<()> {
         StepState::Done,
     );
     Ok(())
+}
+
+fn desired_state_reached(desired: DesiredState, active: bool) -> bool {
+    matches!(desired, DesiredState::Running) == active
 }
 
 fn print_service_status(label: &str, unit: &str) -> Result<()> {
@@ -541,20 +557,31 @@ mod tests {
     }
 
     #[test]
+    fn desired_service_state_matches_systemd_activity() {
+        assert!(desired_state_reached(DesiredState::Running, true));
+        assert!(!desired_state_reached(DesiredState::Running, false));
+        assert!(desired_state_reached(DesiredState::Stopped, false));
+        assert!(!desired_state_reached(DesiredState::Stopped, true));
+    }
+
+    #[test]
     fn capitalization_keeps_the_rest_of_a_verb() {
         assert_eq!(capitalize("start"), "Start");
         assert_eq!(capitalize(""), "");
     }
 
     #[test]
-    fn only_immich_and_jellyfin_tailscale_proxies_are_kept() {
-        assert!(is_media_tailscale_proxy(
+    fn only_selected_tailscale_proxies_are_kept() {
+        assert!(is_retained_tailscale_proxy(
             "statefulset.apps/ts-immich-example"
         ));
-        assert!(is_media_tailscale_proxy(
+        assert!(is_retained_tailscale_proxy(
             "statefulset.apps/ts-jellyfin-example"
         ));
-        assert!(!is_media_tailscale_proxy(
+        assert!(is_retained_tailscale_proxy(
+            "statefulset.apps/ts-sure-example"
+        ));
+        assert!(!is_retained_tailscale_proxy(
             "statefulset.apps/ts-radarr-example"
         ));
     }

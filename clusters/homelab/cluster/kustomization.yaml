@@ -13,3 +13,4 @@ resources:
   - flux-ui.yaml
   - jellyfin.yaml
   - media-automation.yaml
+  - sure.yaml

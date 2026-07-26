@@ -1,0 +1,30 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: sure-database
+  namespace: sure
+spec:
+  affinity:
+    enablePodAntiAffinity: true
+    nodeSelector:
+      homelab.bupd.xyz/workload-pool: media
+    topologyKey: kubernetes.io/hostname
+  bootstrap:
+    initdb:
+      database: sure
+      owner: sure
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-standard-trixie
+  instances: 1
+  monitoring:
+    enablePodMonitor: true
+  postgresUID: 26
+  postgresGID: 26
+  resources:
+    limits:
+      memory: 2Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  storage:
+    size: 20Gi
+    storageClass: local-path

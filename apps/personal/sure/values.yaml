@@ -1,0 +1,265 @@
+global:
+  createDefaultServiceAccount: false
+
+controllers:
+  web:
+    replicas: 1
+    serviceAccount: &defaultServiceAccount
+      name: default
+    strategy: Recreate
+    containers:
+      app:
+        image: &sureImage
+          repository: ghcr.io/we-promise/sure
+          tag: stable
+          digest: sha256:96155b20c0b71f8e2ab960ab5aba8fba9df64c6a40ec581eca20af2b20ab089c
+          pullPolicy: IfNotPresent
+        command:
+          - /bin/bash
+          - -lc
+        args:
+          - |
+            install -d -m 0700 /tmp/sure
+            export TMPDIR=/tmp/sure
+            exec /rails/bin/docker-entrypoint ./bin/rails server
+        env: &sureEnv
+          SELF_HOSTED: "true"
+          ONBOARDING_STATE: open
+          RAILS_FORCE_SSL: "true"
+          RAILS_ASSUME_SSL: "true"
+          APP_DOMAIN: sure.tail6c5ea9.ts.net
+          WEBAUTHN_RP_ID: tail6c5ea9.ts.net
+          WEBAUTHN_ALLOWED_ORIGINS: https://sure.tail6c5ea9.ts.net
+          EXCHANGE_RATE_PROVIDER: yahoo_finance
+          SECURITIES_PROVIDER: yahoo_finance
+          TZ: Asia/Kolkata
+          DB_HOST:
+            valueFrom:
+              secretKeyRef:
+                name: sure-database-app
+                key: host
+          DB_PORT:
+            valueFrom:
+              secretKeyRef:
+                name: sure-database-app
+                key: port
+          POSTGRES_USER:
+            valueFrom:
+              secretKeyRef:
+                name: sure-database-app
+                key: user
+          POSTGRES_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: sure-database-app
+                key: password
+          POSTGRES_DB:
+            valueFrom:
+              secretKeyRef:
+                name: sure-database-app
+                key: dbname
+        envFrom: &sureEnvFrom
+          - secretRef:
+              name: sure-app
+        probes:
+          liveness: &sureProbe
+            enabled: true
+            type: HTTP
+            path: /up
+            port: 3000
+          readiness: *sureProbe
+          startup:
+            <<: *sureProbe
+            spec:
+              failureThreshold: 60
+              periodSeconds: 5
+        resources:
+          limits:
+            memory: 2Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+        securityContext: &sureSecurityContext
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+          seccompProfile:
+            type: RuntimeDefault
+
+  worker:
+    replicas: 1
+    serviceAccount: *defaultServiceAccount
+    strategy: Recreate
+    containers:
+      app:
+        image: *sureImage
+        command:
+          - /bin/bash
+          - -lc
+        args:
+          - |
+            install -d -m 0700 /tmp/sure
+            export TMPDIR=/tmp/sure
+            exec bundle exec sidekiq -C config/sidekiq.yml
+        env: *sureEnv
+        envFrom: *sureEnvFrom
+        resources:
+          limits:
+            memory: 2Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+        securityContext: *sureSecurityContext
+
+  redis:
+    replicas: 1
+    serviceAccount: *defaultServiceAccount
+    strategy: Recreate
+    containers:
+      app:
+        image:
+          repository: docker.io/library/redis
+          tag: "7.2"
+          digest: sha256:6372db89351b00ba0ddca437ff49ce2ed4beed8a961a27d8259060c9603c240d
+          pullPolicy: IfNotPresent
+        command:
+          - /bin/sh
+          - -c
+        args:
+          - exec redis-server --appendonly yes --dir /data --requirepass "$REDIS_PASSWORD"
+        env:
+          REDIS_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: sure-app
+                key: REDIS_PASSWORD
+        probes:
+          liveness: &redisProbe
+            enabled: true
+            type: TCP
+            port: 6379
+          readiness: *redisProbe
+          startup:
+            <<: *redisProbe
+            spec:
+              failureThreshold: 30
+              periodSeconds: 5
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsGroup: 999
+          runAsNonRoot: true
+          runAsUser: 999
+          seccompProfile:
+            type: RuntimeDefault
+
+  migration:
+    type: job
+    serviceAccount: *defaultServiceAccount
+    annotations:
+      helm.sh/hook: pre-install,pre-upgrade
+      helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+      helm.sh/hook-weight: "-5"
+    job:
+      activeDeadlineSeconds: 900
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 600
+    containers:
+      app:
+        image: *sureImage
+        command:
+          - /bin/bash
+          - -lc
+        args:
+          - |
+            set -euo pipefail
+            install -d -m 0700 /tmp/sure
+            export TMPDIR=/tmp/sure
+            until pg_isready -h "${DB_HOST}" -p "${DB_PORT}" -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"; do
+              echo "waiting for CloudNativePG"
+              sleep 5
+            done
+            DISABLE_DATABASE_ENVIRONMENT_CHECK=1 bundle exec rake db:prepare
+        env: *sureEnv
+        envFrom: *sureEnvFrom
+        resources:
+          limits:
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        securityContext: *sureSecurityContext
+
+defaultPodOptions:
+  automountServiceAccountToken: false
+  nodeSelector:
+    homelab.bupd.xyz/workload-pool: media
+  securityContext:
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+  terminationGracePeriodSeconds: 60
+
+service:
+  app:
+    controller: web
+    ports:
+      http:
+        port: 3000
+        primary: true
+        protocol: HTTP
+  redis:
+    controller: redis
+    ports:
+      redis:
+        port: 6379
+        primary: true
+        protocol: TCP
+
+persistence:
+  storage:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    storageClass: local-path
+    retain: true
+    advancedMounts:
+      web:
+        app:
+          - path: /rails/storage
+      worker:
+        app:
+          - path: /rails/storage
+  redis:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 2Gi
+    storageClass: local-path
+    retain: true
+    advancedMounts:
+      redis:
+        app:
+          - path: /data
+  tmp:
+    type: emptyDir
+    advancedMounts:
+      web:
+        app:
+          - path: /tmp
+      worker:
+        app:
+          - path: /tmp
+      migration:
+        app:
+          - path: /tmp

@@ -70,8 +70,16 @@ Volume=/etc/nvidia-container-runtime:/etc/nvidia-container-runtime:ro
 
 Exec=agent
 
+# K3s needs time to terminate nested Pods and containerd cleanly. Quadlet's
+# default is only 10 seconds, which makes `podman rm --force` fail before the
+# agent has exited and causes `homelab down` to abort before unmounting storage.
+StopTimeout=120
+
 [Service]
 ExecStartPre=/usr/local/lib/homelab/refresh-nvidia-cdi.sh
 Restart=always
 RestartSec=5
 TimeoutStartSec=900
+# Keep this longer than StopTimeout so Podman can report the final container
+# state after it has sent SIGKILL, if the graceful shutdown deadline expires.
+TimeoutStopSec=180
