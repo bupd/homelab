@@ -1,0 +1,20 @@
+[Unit]
+Description=Sure web
+Requires=sure-db.service sure-redis.service
+After=sure-db.service sure-redis.service
+
+[Container]
+Image=ghcr.io/we-promise/sure:stable
+ContainerName=sure-web
+Network=sure.network
+Volume=sure-storage.volume:/rails/storage
+EnvironmentFile=/etc/sure/sure.env
+PublishPort=3000:3000
+AutoUpdate=registry
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

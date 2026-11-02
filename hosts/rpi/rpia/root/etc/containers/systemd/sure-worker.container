@@ -1,0 +1,20 @@
+[Unit]
+Description=Sure worker (sidekiq)
+Requires=sure-db.service sure-redis.service
+After=sure-db.service sure-redis.service sure-web.service
+
+[Container]
+Image=ghcr.io/we-promise/sure:stable
+ContainerName=sure-worker
+Network=sure.network
+Volume=sure-storage.volume:/rails/storage
+EnvironmentFile=/etc/sure/sure.env
+Exec=bundle exec sidekiq
+AutoUpdate=registry
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

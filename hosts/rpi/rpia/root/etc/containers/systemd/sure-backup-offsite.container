@@ -1,0 +1,17 @@
+[Unit]
+Description=Sure backups to Cloudflare R2 (age-encrypted with SOPS key, daily 02:30 IST)
+After=sure-backup.service
+
+[Container]
+Image=docker.io/rclone/rclone:1.71
+ContainerName=sure-backup-offsite
+Volume=/var/lib/sure-backups:/backups:ro
+Volume=/var/lib/sure-backups-enc:/enc
+Volume=/etc/sure/offsite.sh:/offsite.sh:ro
+EnvironmentFile=/etc/sure/r2.env
+Entrypoint=/bin/sh
+Exec=/offsite.sh
+
+[Service]
+Type=oneshot
+

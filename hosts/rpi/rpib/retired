@@ -1,0 +1,4 @@
+# Files reconcile.sh removes from this host (unit stopped first). One absolute path per line.
+# Uptime Kuma replaced by Gatus on 2026-11-02: Kuma kept monitors in its database.
+/etc/containers/systemd/uptime-kuma.container
+/etc/containers/systemd/uptime-kuma.volume

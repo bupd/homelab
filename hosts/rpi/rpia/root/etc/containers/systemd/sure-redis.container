@@ -1,0 +1,20 @@
+[Unit]
+Description=Sure redis
+
+[Container]
+Image=docker.io/library/redis:7-alpine
+ContainerName=sure-redis
+Network=sure.network
+Volume=sure-redis.volume:/data
+HealthCmd=redis-cli ping
+HealthInterval=5s
+HealthTimeout=5s
+HealthRetries=5
+Notify=healthy
+
+[Service]
+Restart=always
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

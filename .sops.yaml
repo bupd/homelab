@@ -3,3 +3,6 @@ creation_rules:
     encrypted_regex: ^(data|stringData)$
     age:
       - age1vgjxqxjsgk0p46f0fyvnvxrd6sceuhqymyt4h5fsgaanrd2vt3yqpa0054
+  - path_regex: hosts/rpi/.*\.sops\.env$
+    age:
+      - age1vgjxqxjsgk0p46f0fyvnvxrd6sceuhqymyt4h5fsgaanrd2vt3yqpa0054

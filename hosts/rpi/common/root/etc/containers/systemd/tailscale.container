@@ -1,0 +1,24 @@
+[Unit]
+Description=Tailscale (container until it ships in the bootc image)
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=ghcr.io/tailscale/tailscale:stable
+ContainerName=tailscale
+Network=host
+AddCapability=NET_ADMIN NET_RAW SYS_MODULE
+AddDevice=/dev/net/tun
+Volume=/var/lib/tailscale:/var/lib/tailscale
+# tailscaled directly, not containerboot: containerboot gives up on an interactive
+# login after about a minute and restarts, which throws the approval away. Log in
+# once with: sudo podman exec tailscale tailscale up --hostname=$(hostnamectl --static)
+Entrypoint=/usr/local/bin/tailscaled
+Exec=--statedir=/var/lib/tailscale
+AutoUpdate=registry
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
