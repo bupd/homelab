@@ -1,0 +1,23 @@
+[Unit]
+Description=Gatus status page and uptime checks
+Wants=network-online.target tailscale.service
+After=network-online.target tailscale.service
+
+[Container]
+Image=ghcr.io/twin/gatus:v5.38.0
+ContainerName=gatus
+# Host network so checks leave over tailscale0 and reach 100.x tailnet addresses.
+Network=host
+# The image runs as root, which makes ICMP use raw sockets.
+AddCapability=NET_RAW
+Volume=gatus.volume:/data
+Volume=/etc/gatus:/config:ro
+Environment=GATUS_CONFIG_PATH=/config
+# NTFY_TOPIC stays out of the public repo; it comes from secrets/gatus.sops.env.
+EnvironmentFile=/etc/gatus/gatus.env
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

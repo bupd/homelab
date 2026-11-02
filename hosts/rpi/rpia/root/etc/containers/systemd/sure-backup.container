@@ -1,0 +1,27 @@
+[Unit]
+Description=Sure nightly backup (bin/sure-backup scheduled)
+Requires=sure-db.service
+After=sure-db.service
+
+[Container]
+Image=ghcr.io/we-promise/sure:stable
+ContainerName=sure-backup
+Network=sure.network
+User=0
+Entrypoint=bin/sure-backup
+Volume=/var/lib/sure-backups:/backups
+Volume=sure-storage.volume:/rails/storage
+Volume=/etc/sure:/config:ro
+EnvironmentFile=/etc/sure/sure.env
+Environment=POSTGRES_HOST=sure-db
+# 20:30 UTC = 02:00 IST
+Environment="BACKUP_SCHEDULE=30 20 * * *"
+Environment=BACKUP_KEEP_DAYS=7
+Environment=INSTANCE_ID=rpia
+AutoUpdate=registry
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

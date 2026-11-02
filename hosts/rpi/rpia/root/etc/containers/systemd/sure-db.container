@@ -1,0 +1,21 @@
+[Unit]
+Description=Sure postgres
+
+[Container]
+Image=docker.io/library/postgres:16
+ContainerName=sure-db
+Network=sure.network
+Volume=sure-pg.volume:/var/lib/postgresql/data
+EnvironmentFile=/etc/sure/sure.env
+HealthCmd=pg_isready -U sure_user -d sure_production
+HealthInterval=5s
+HealthTimeout=5s
+HealthRetries=5
+Notify=healthy
+
+[Service]
+Restart=always
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

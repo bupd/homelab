@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Sure off-site upload to R2 (after the 20:30 UTC backup)
+
+[Timer]
+OnCalendar=*-*-* 21:00:00 UTC
+Persistent=true
+RandomizedDelaySec=5m
+
+[Install]
+WantedBy=timers.target

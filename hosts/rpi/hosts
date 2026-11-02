@@ -1,0 +1,3 @@
+# hostname  LAN address (DHCP reservation)  tailnet address
+rpia 192.168.0.3 100.121.232.98
+rpib 192.168.0.4 100.112.19.92

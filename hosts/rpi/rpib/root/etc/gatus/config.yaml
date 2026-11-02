@@ -1,0 +1,61 @@
+# Gatus on rpib. Checks run every minute over Tailscale.
+# Reference: https://github.com/TwiN/gatus/blob/v5.38.0/README.md
+
+storage:
+  type: sqlite
+  path: /data/gatus.db
+
+ui:
+  title: bupd homelab
+  header: bupd homelab
+  description: Status of services on rpia and rpib.
+  dashboard-heading: Homelab status
+  dashboard-subheading: Two Raspberry Pi 5s on bootc. Checked every minute from rpib over Tailscale.
+  dark-mode: true
+  default-sort-by: group
+  buttons:
+    - name: Sure
+      link: http://100.121.232.98:3000
+    - name: Source
+      link: https://github.com/bupd/homelab/tree/main/hosts/rpi
+  custom-css: |
+    body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; }
+    #results .endpoint { border-radius: 10px; }
+
+alerting:
+  ntfy:
+    url: https://ntfy.sh
+    topic: "${NTFY_TOPIC}"
+    priority: 3
+    click: http://100.112.19.92:8080
+    default-alert:
+      failure-threshold: 3
+      success-threshold: 2
+      send-on-resolved: true
+
+endpoints:
+  - name: Sure
+    group: Apps
+    url: http://100.121.232.98:3000/
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+      - "[RESPONSE_TIME] < 3000"
+    alerts:
+      - type: ntfy
+
+  - name: rpia ping
+    group: Hosts
+    url: icmp://100.121.232.98
+    interval: 60s
+    conditions:
+      - "[CONNECTED] == true"
+    alerts:
+      - type: ntfy
+
+  - name: rpia ssh
+    group: Hosts
+    url: tcp://100.121.232.98:22
+    interval: 60s
+    conditions:
+      - "[CONNECTED] == true"
